@@ -724,7 +724,7 @@ input:focus, textarea:focus {
       return;
     }
     
-    const uploadMsg = addSystem('正在上传... 0%', Date.now());
+    const uploadMsg = addSystem(`${currentName} 正在上传... 0%`, Date.now());
     
     const form = new FormData();
     form.append('file', file);
@@ -737,7 +737,7 @@ input:focus, textarea:focus {
       if (e.lengthComputable) {
         const percent = Math.round((e.loaded / e.total) * 100);
         if (uploadMsg && uploadMsg.textContent) {
-          uploadMsg.textContent = `🔔 正在上传... ${percent}%`;
+          uploadMsg.textContent = `🔔 ${currentName} 正在上传... ${percent}%`;
         }
       }
     });
