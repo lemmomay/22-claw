@@ -1,267 +1,240 @@
-# Chatroom - 临时云聊天室
+# Chatroom - 临时云聊天室 🎉
 
-轻量级临时聊天室，支持实时通讯和文件分享。专为低资源环境优化，可在 64MB+ 内存的 VPS 上稳定运行。
+一个轻量级、功能完整的临时聊天室应用，专为小团队和朋友间的临时沟通设计。
 
-## ✨ 特性
+## ✨ 核心特性
 
-- ⏱️ **临时房间** - 1-72 小时自动过期
-- 🔒 **密码保护** - 可选的房间密码
-- 👥 **实时成员列表** - 查看在线用户
-- 📸 **图片上传分享** - 支持拖拽和粘贴
-- 🛡️ **管理员命令** - 踢人、清屏、设置密码
-- 🔄 **断线重连保护** - 30分钟 grace period
-- 🔔 **浏览器通知** - 新消息提醒
-- 🎨 **现代 UI** - 渐变背景、平滑动画
-- 🐧 **Alpine 兼容** - 支持小小鸡部署
+### 💬 实时通讯
+- WebSocket 实时聊天
+- 临时房间（1-72 小时自动过期）
+- 密码保护
+- 断线重连（30 分钟保护期）
+- 设备识别
+
+### 📎 媒体分享
+- **图片** - 预览 + 点击查看原图
+- **视频** - 缩略图 + 点击弹窗播放
+- **音频** - 播放器 + 下载按钮
+- **文件** - 支持所有文件类型，一键下载
+
+### 🏷️ 交互功能
+- **@提及** - 输入 `@用户名` 或双击成员列表
+- **回复消息** - 双击消息或左滑（移动端）
+- **跳转原消息** - 点击回复引用
+- **Markdown 支持** - 粗体、斜体、代码、链接
+- **代码高亮** - 支持代码块展开/折叠
+
+### 🛡️ 存储管理
+- 单文件限制：200MB
+- 房间存储限制：500MB
+- 全局存储限制：2GB
+- 自动清理：房间过期、/clear 命令、孤儿文件（24h）
+
+### 👑 管理功能
+- `/clear` - 清空聊天和文件
+- `/kick @用户` - 踢出用户
+- `/pass [密码]` - 设置/取消密码
+- `/help` - 查看帮助
+
+## 📊 性能指标
+
+| 指标 | 数值 |
+|------|------|
+| 内存占用 | 40-50MB |
+| CPU 占用 | <1% (空闲) |
+| 磁盘占用 | ~180MB |
+| 启动时间 | <2 秒 |
+| 并发用户 | 20+ (单房间) |
 
 ## 🚀 快速开始
 
-### 方式一：交互式菜单（推荐）
+### 方式一：交互式安装（推荐）
 
 ```bash
-# 下载项目
 git clone https://github.com/lemmomay/22-claw.git
 cd 22-claw/chatroom
-
-# 运行管理脚本（进入交互式菜单）
 ./chatroom.sh
 ```
 
-**菜单界面：**
-```
-╔════════════════════════════════════════╗
-║       Chatroom 管理面板                ║
-╚════════════════════════════════════════╝
+进入交互式菜单后选择"安装服务"。
 
-  服务状态: ● 运行中
-
-  1. 安装服务
-  2. 启动服务
-  3. 停止服务
-  4. 重启服务
-  5. 查看状态
-  6. 查看日志
-  7. 检查依赖
-  8. 卸载服务
-  0. 退出
-
-  请选择 [0-8]:
-```
-
-### 方式二：命令行模式
+### 方式二：手动安装
 
 ```bash
-# 安装
-./chatroom.sh install
+# 安装依赖
+npm install --production
 
-# 指定端口安装
-./chatroom.sh install 8080
-
-# 管理服务
-./chatroom.sh start      # 启动
-./chatroom.sh stop       # 停止
-./chatroom.sh restart    # 重启
-./chatroom.sh status     # 状态
-./chatroom.sh logs       # 日志
-./chatroom.sh uninstall  # 卸载
+# 启动服务
+PORT=28881 node server.js
 ```
 
-### 方式三：Docker 部署
+### 方式三：Docker
 
 ```bash
-# 使用 docker-compose
 docker-compose up -d
-
-# 查看日志
-docker-compose logs -f
 ```
 
-详细配置请参考 [DOCKER.md](./DOCKER.md)
+## 🎨 使用说明
 
-## 🔧 系统服务管理
+### 创建房间
+1. 访问 `http://your-server:28881`
+2. 输入房间 ID、昵称
+3. 设置房间时长（1-72 小时）
+4. 可选：设置密码保护
 
-安装后也可以使用系统命令：
+### 加入房间
+1. 使用房间链接直接加入
+2. 或手动输入房间 ID 和密码
 
-**systemd (Ubuntu/Debian/CentOS):**
-```bash
-systemctl start chatroom
-systemctl stop chatroom
-systemctl restart chatroom
-systemctl status chatroom
-journalctl -u chatroom -f
-```
+### 快捷操作
+- **双击消息** - 回复
+- **双击成员** - @提及
+- **左滑消息** - 回复（移动端）
+- **点击回复引用** - 跳转到原消息
+- **点击图片/视频** - 全屏查看
 
-**OpenRC (Alpine Linux):**
-```bash
-rc-service chatroom start
-rc-service chatroom stop
-rc-service chatroom restart
-rc-service chatroom status
-tail -f /var/log/chatroom.log
-```
+## 🎯 适用场景
 
-## ⚙️ 配置
+✅ **完美适合：**
+- 3-5 好友临时聊天
+- 小团队文件分享
+- 临时协作讨论
+- 活动/会议临时沟通
+- 64MB+ 小鸡部署
 
-### 环境变量
+❌ **不适合：**
+- 长期存储需求
+- 大规模用户（>50 人）
+- 需要用户系统
+- 需要持久化
 
-```bash
-# 端口（默认 28881）
-export PORT=28881
+## 📚 文档
 
-# 生产环境
-export NODE_ENV=production
-```
+- [项目总结](./PROJECT_SUMMARY.md) - 完整开发历程
+- [功能清单](./CHECKLIST.md) - 详细功能列表
+- [Docker 部署](./DOCKER.md) - Docker 使用指南
 
-### 修改配置文件
+## 🔧 配置
 
 编辑 `src/config.js`：
 
 ```javascript
 module.exports = {
-  PORT: process.env.PORT || 28881,
+  PORT: 28881,                    // 服务端口
+  MAX_FILE_SIZE: 200 * 1024 * 1024,  // 200MB
+  MAX_ROOM_STORAGE: 500 * 1024 * 1024, // 500MB
+  MAX_TOTAL_STORAGE: 2 * 1024 * 1024 * 1024, // 2GB
   GRACE_PERIOD_MS: 30 * 60 * 1000,  // 30 分钟
-  MAX_FILE_SIZE: 30 * 1024 * 1024,  // 30MB
-  MIN_DURATION_HOURS: 1,
-  MAX_DURATION_HOURS: 72,
-  // ... 更多配置
 };
 ```
 
-## 📊 资源占用
+## 🛠️ 技术栈
 
-在 Alpine Linux (183MB RAM) 上的实际占用：
+- **后端**: Node.js + Express + WebSocket
+- **前端**: HTML5 + CSS3 + Vanilla JavaScript
+- **存储**: 文件系统（无数据库）
+- **部署**: systemd / OpenRC / Docker
 
-- **内存**: ~40-50MB
-- **磁盘**: ~180MB (含 node_modules)
-- **CPU**: 空闲时 <1%
-- **脚本**: 几乎无占用（仅在执行时运行）
+## 📦 项目结构
 
-## 🔒 安全建议
-
-### 1. 使用反向代理（推荐）
-
-**Nginx 配置示例：**
-
-```nginx
-server {
-    listen 80;
-    server_name chat.example.com;
-    
-    location / {
-        proxy_pass http://localhost:28881;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-}
+```
+chatroom/
+├── server.js              # 主服务
+├── src/
+│   ├── config.js         # 配置
+│   ├── RoomManager.js    # 房间管理
+│   ├── StorageManager.js # 存储管理
+│   ├── CommandHandler.js # 命令处理
+│   └── ConnectionHandler.js # 连接处理
+├── public/
+│   ├── index.html        # 前端页面
+│   └── uploads/          # 文件存储
+├── chatroom.sh           # 管理脚本
+└── README.md
 ```
 
-### 2. 配置防火墙
+## 🔒 安全特性
 
+- ✅ 密码验证
+- ✅ 文件类型验证
+- ✅ 大小限制
+- ✅ XSS 防护
+- ✅ 存储溢出保护
+- ✅ 输入验证
+
+## 🐛 故障排查
+
+### 服务无法启动
 ```bash
-# UFW (Ubuntu/Debian)
-ufw allow 28881/tcp
+# 检查端口占用
+lsof -i :28881
 
-# iptables (Alpine)
-iptables -A INPUT -p tcp --dport 28881 -j ACCEPT
+# 查看日志
+./chatroom.sh  # 选择"查看日志"
 ```
 
-### 3. 定期更新
+### 文件上传失败
+- 检查存储空间
+- 确认文件大小 <200MB
+- 查看 `/health` 端点的存储统计
 
-```bash
-cd /root/chatroom
-git pull
-npm install --production
-./chatroom.sh restart
-```
+### 连接断开
+- 检查网络连接
+- 30 分钟内会自动重连
+- 超时后需要重新加入
 
-## 📝 管理员命令
+## 📈 监控
 
-在聊天框中输入（仅房间创建者可用）：
+访问 `/health` 查看服务状态：
 
-- `/clear` - 清空聊天记录
-- `/kick @昵称` - 踢出指定用户
-- `/pass [密码]` - 设置或取消房间密码
-- `/help` - 查看帮助
-
-## 🔗 API
-
-### 健康检查
-
-```bash
-curl http://localhost:28881/health
-```
-
-返回：
 ```json
 {
   "status": "ok",
   "rooms": 2,
   "clients": 5,
-  "uptime": 3600.5
+  "uptime": 3600,
+  "storage": {
+    "used": "150 MB",
+    "max": "2 GB"
+  }
 }
 ```
 
-### WebSocket 连接
+## 🎉 开发历程
 
-```
-ws://host:port/?room=<roomId>&name=<name>&pass=<password>&durationHours=<hours>&device=<deviceId>&color=<color>
-```
+- **开发时间**: 约 6 小时
+- **代码行数**: 2500+ 行
+- **提交次数**: 20+ 次
+- **功能数量**: 20+ 个核心功能
 
-## 🐛 故障排查
+详见 [PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md)
 
-### 服务无法启动
+## 📝 更新日志
 
-```bash
-# 使用脚本检查
-./chatroom.sh status
+### v1.0.0 (2026-02-27)
+- ✅ 实时聊天
+- ✅ 图片/视频/音频/文件分享
+- ✅ @提及和回复功能
+- ✅ 存储管理
+- ✅ 管理员命令
+- ✅ 断线重连
+- ✅ Markdown 支持
 
-# 查看日志
-./chatroom.sh logs
+## 🤝 贡献
 
-# 检查依赖
-./chatroom.sh
-# 然后选择 7 (检查依赖)
-```
-
-### 端口被占用
-
-```bash
-# 查看端口占用
-ss -tlnp | grep 28881
-
-# 或使用脚本重新安装并指定其他端口
-./chatroom.sh install 8080
-```
-
-### 依赖问题
-
-```bash
-# 重新安装依赖
-cd /root/chatroom
-rm -rf node_modules package-lock.json
-npm install --production
-
-# 重启服务
-./chatroom.sh restart
-```
-
-## 📚 更多文档
-
-- [Docker 部署指南](./DOCKER.md) - 详细的 Docker 配置和优化
-- [GitHub 仓库](https://github.com/lemmomay/22-claw)
+这是一个个人项目，暂不接受外部贡献。
 
 ## 📄 许可
 
 MIT License
 
-## 🤝 贡献
+## 🌟 致谢
 
-欢迎提交 Issue 和 Pull Request！
+感谢 11 的需求和测试反馈！
 
 ---
 
-_由 22 和 11 共同开发维护_ 🌸
+**项目地址**: https://github.com/lemmomay/22-claw  
+**在线演示**: http://194.156.162.243:28881
+
+_由 22 和 11 共同完成于 2026-02-27/28_ 🌸
