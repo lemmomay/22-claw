@@ -182,15 +182,16 @@ class ConnectionHandler {
 
     // Handle device-based reconnection/rename
     if (params.deviceId) {
+      // 如果设备在 ghost 列表中，说明是断线重连，应该允许并清除 ghost
       if (this.roomManager.isGhostActive(room, params.deviceId)) {
-        this.roomManager.send(ws, { 
-          type: 'error', 
-          code: 'device_grace', 
-          message: '该设备暂时离线，请稍后再连（30分钟内保留）', 
-          ts: Date.now() 
-        });
-        ws.close(4006, 'device grace');
-        return { success: false };
+        // 清除 ghost 状态
+        room.ghosts.delete(params.deviceId);
+        const timer = room.ghostCleanupTimers.get(params.deviceId);
+        if (timer) {
+          clearTimeout(timer);
+          room.ghostCleanupTimers.delete(params.deviceId);
+        }
+        // 继续正常连接流程
       }
 
       const deviceClient = this.roomManager.findClientByDevice(room, params.deviceId);
