@@ -349,6 +349,19 @@ input:focus, textarea:focus {
     .file-size { font-size:12px; color:var(--muted); margin-top:2px; }
     .file-download { padding:6px 12px; background:var(--primary); color:#fff; border-radius:8px; text-decoration:none; font-size:13px; white-space:nowrap; }
     .file-download:hover { opacity:0.9; }
+
+    /* 视频缩略图 */
+    .video-thumb { position:relative; width:100%; max-width:300px; border-radius:10px; overflow:hidden; cursor:pointer; }
+    .video-preview { width:100%; display:block; }
+    .play-overlay { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:48px; color:#fff; text-shadow:0 2px 8px rgba(0,0,0,0.5); pointer-events:none; }
+    .video-thumb:hover .play-overlay { transform:translate(-50%,-50%) scale(1.1); transition:transform 0.2s; }
+    .video-download, .audio-download { display:inline-block; margin-top:8px; padding:6px 12px; background:var(--primary); color:#fff; border-radius:8px; text-decoration:none; font-size:13px; }
+    .video-download:hover, .audio-download:hover { opacity:0.9; }
+    
+    /* 视频弹窗 */
+    .video-modal-content { position:relative; max-width:90vw; max-height:90vh; }
+    .video-modal-title { color:#fff; font-size:16px; font-weight:600; margin-bottom:12px; text-align:center; }
+    .video-modal-player { max-width:90vw; max-height:80vh; border-radius:10px; }
   </style>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💬</text></svg>">
   <meta name="description" content="轻量级临时聊天室，支持实时通讯和文件分享">
@@ -512,7 +525,7 @@ input:focus, textarea:focus {
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
     const replyHtml = msg.replyTo ? `
-      <div class="reply-quote" onclick="scrollToMessage(${msg.replyTo.ts})">
+      <div class="reply-quote" onclick="scrollToMessage(` + msg.replyTo.ts + `)">
         <div class="reply-line"></div>
         <div class="reply-content">
           <div class="reply-author">${escapeHtml(msg.replyTo.name)}</div>
@@ -560,14 +573,15 @@ input:focus, textarea:focus {
   function addImage(msg){
     const row = document.createElement('div');
     row.className = 'msgRow ' + (msg.name === currentName ? 'me' : 'other');
+    row.id = 'msg-' + msg.ts;
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
     const img = `<img class="imgMsg" src="${msg.url}" alt="${escapeHtml(msg.original||'image')}" data-src="${msg.url}" />`;
     const badge = `<span class="name-badge" style="background:${msg.color || '#2f80ed'}"></span>`;
     if (msg.name !== currentName) {
-      bubble.innerHTML = `<span class="name">${badge}${escapeHtml(msg.name)}</span>${img}<div style="margin-top:6px;"><a href="${msg.url}" target="_blank" download>查看原图</a></div>`;
+      bubble.innerHTML = `<span class="name">${badge}${escapeHtml(msg.name)}</span>${img}<div style="margin-top:6px;"><a href="${msg.url}" target="_blank" download>下载原图</a></div>`;
     } else {
-      bubble.innerHTML = `${img}<div style="margin-top:6px;"><a href="${msg.url}" target="_blank" download>查看原图</a></div>`;
+      bubble.innerHTML = `${img}<div style="margin-top:6px;"><a href="${msg.url}" target="_blank" download>下载原图</a></div>`;
     }
     row.appendChild(bubble);
     chat.appendChild(row);
@@ -581,6 +595,7 @@ input:focus, textarea:focus {
   function addAudio(msg){
     const row = document.createElement('div');
     row.className = 'msgRow ' + (msg.name === currentName ? 'me' : 'other');
+    row.id = 'msg-' + msg.ts;
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
     
@@ -594,6 +609,7 @@ input:focus, textarea:focus {
           <span class="audio-name">${escapeHtml(msg.original)}</span>
           <span class="audio-size">${msg.sizeFormatted || ''}</span>
         </div>
+        <a href="${msg.url}" class="audio-download" download="${escapeHtml(msg.original)}">下载</a>
       </div>
     `;
     
@@ -603,6 +619,7 @@ input:focus, textarea:focus {
     } else {
       bubble.innerHTML = audioHtml;
     }
+    row.addEventListener('dblclick', () => setReply(msg.name, msg.original || '音频'));
     row.appendChild(bubble);
     chat.appendChild(row);
     chat.scrollTop = chat.scrollHeight;
@@ -611,6 +628,7 @@ input:focus, textarea:focus {
   function addFile(msg){
     const row = document.createElement('div');
     row.className = 'msgRow ' + (msg.name === currentName ? 'me' : 'other');
+    row.id = 'msg-' + msg.ts;
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
     
@@ -641,19 +659,24 @@ input:focus, textarea:focus {
   function addVideo(msg){
     const row = document.createElement('div');
     row.className = 'msgRow ' + (msg.name === currentName ? 'me' : 'other');
+    row.id = 'msg-' + msg.ts;
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
     
+    // 视频缩略图 + 点击弹窗
     const videoHtml = `
-      <div class="video-msg">
-        <video class="videoMsg" controls preload="metadata">
-          <source src="${msg.url}" type="${msg.mime}">
-          您的浏览器不支持视频播放
-        </video>
+      <div class="video-msg" onclick="openVideoModal('${msg.url}', '${escapeHtml(msg.original)}', '${msg.mime}')">
+        <div class="video-thumb">
+          <video class="video-preview" preload="metadata" muted>
+            <source src="${msg.url}#t=0.1" type="${msg.mime}">
+          </video>
+          <div class="play-overlay">▶</div>
+        </div>
         <div class="video-info">
           <span class="video-name">${escapeHtml(msg.original)}</span>
           <span class="video-size">${msg.sizeFormatted || ''}</span>
         </div>
+        <a href="${msg.url}" class="video-download" download="${escapeHtml(msg.original)}" onclick="event.stopPropagation()">下载</a>
       </div>
     `;
     
@@ -663,6 +686,7 @@ input:focus, textarea:focus {
     } else {
       bubble.innerHTML = videoHtml;
     }
+    row.addEventListener('dblclick', () => setReply(msg.name, msg.original || '视频'));
     row.appendChild(bubble);
     chat.appendChild(row);
     chat.scrollTop = chat.scrollHeight;
@@ -905,5 +929,14 @@ input:focus, textarea:focus {
     setTimeout(() => joinBtn.click(), 500);
   }
 </script>
+
+  <!-- 视频弹窗 -->
+  <div id="videoModal" class="modal" onclick="if(event.target===this) closeVideoModal()">
+    <span class="close" onclick="closeVideoModal()">&times;</span>
+    <div class="video-modal-content">
+      <div class="video-modal-title" id="videoTitle"></div>
+      <video id="videoPlayer" class="video-modal-player" controls autoplay></video>
+    </div>
+  </div>
 </body>
 </html>
