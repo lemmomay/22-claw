@@ -39,6 +39,12 @@ class CommandHandler {
   }
 
   handleClear(ws) {
+    // 清理房间文件
+    if (this.roomManager.storageManager) {
+      const cleaned = this.roomManager.storageManager.cleanupRoom(ws.roomId);
+      console.log(`/clear command: cleaned ${cleaned} files from room ${ws.roomId}`);
+    }
+    
     this.roomManager.broadcast(ws.roomId, { 
       type: 'clear', 
       by: ws.name, 
@@ -47,7 +53,7 @@ class CommandHandler {
     
     this.roomManager.broadcast(ws.roomId, { 
       type: 'system', 
-      text: '管理员已清空聊天', 
+      text: '管理员已清空聊天和文件', 
       ts: Date.now() 
     });
   }

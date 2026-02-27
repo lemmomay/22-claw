@@ -5,6 +5,7 @@ const WebSocket = require('ws');
 const multer = require('multer');
 const fs = require('fs');
 const config = require('./src/config');
+const StorageManager = require('./src/StorageManager');
 const RoomManager = require('./src/RoomManager');
 const CommandHandler = require('./src/CommandHandler');
 const ConnectionHandler = require('./src/ConnectionHandler');
@@ -13,16 +14,17 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// Initialize managers
-const roomManager = new RoomManager();
-const commandHandler = new CommandHandler(roomManager);
-const connectionHandler = new ConnectionHandler(roomManager, commandHandler);
-
 // Setup uploads directory
 const uploadsDir = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
+
+// Initialize managers
+const storageManager = new StorageManager(uploadsDir);
+const roomManager = new RoomManager(storageManager);
+const commandHandler = new CommandHandler(roomManager);
+const connectionHandler = new ConnectionHandler(roomManager, commandHandler);
 
 // Configure multer for file uploads
 const upload = multer({
@@ -53,10 +55,17 @@ app.post('/upload', (req, res, next) => {
       return res.status(400).json({ error: '没有文件' });
     }
 
-    try {
+        try {
       const roomId = (req.query.room || '').toString();
       const name = (req.query.name || '').toString();
       const color = (req.query.color || config.DEFAULT_COLOR).toString();
+
+      // 检查存储限制
+      const canUpload = storageManager.canUpload(roomId, req.file.size);
+      if (!canUpload.ok) {
+        try { fs.unlinkSync(req.file.path); } catch (e) {}
+        return res.status(400).json({ error: canUpload.reason });
+      }
 
       // Sanitize room ID
       const safeRoom = roomId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32) || 'room';
@@ -71,22 +80,33 @@ app.post('/upload', (req, res, next) => {
       // Rename uploaded file
       fs.renameSync(req.file.path, newPath);
 
+      // Record upload
+      storageManager.recordUpload(roomId, req.file.size);
+
       const fileUrl = `/uploads/${newName}`;
       const original = req.file.originalname || 'file';
       const mime = req.file.mimetype || '';
 
       // Broadcast to room
+      const isImage = /^image\//i.test(mime);
       roomManager.broadcast(roomId, {
-        type: 'image',
+        type: isImage ? 'image' : 'file',
         name,
         color,
         url: fileUrl,
         original,
         mime,
+        size: req.file.size,
+        sizeFormatted: storageManager.formatSize(req.file.size),
         ts: Date.now()
       });
 
-      res.json({ ok: true, url: fileUrl });
+      res.json({ 
+        ok: true, 
+        url: fileUrl, 
+        size: req.file.size,
+        sizeFormatted: storageManager.formatSize(req.file.size)
+      });
       
     } catch (e) {
       console.error('Upload error:', e);
@@ -105,25 +125,10 @@ app.post('/upload', (req, res, next) => {
   });
 });
 
-// Cleanup old uploads periodically (every hour)
+// Cleanup orphan files periodically (every hour)
 setInterval(() => {
-  try {
-    const files = fs.readdirSync(uploadsDir);
-    const now = Date.now();
-    const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-
-    for (const file of files) {
-      const filePath = path.join(uploadsDir, file);
-      const stats = fs.statSync(filePath);
-      
-      if (now - stats.mtimeMs > maxAge) {
-        fs.unlinkSync(filePath);
-        console.log(`Cleaned up old file: ${file}`);
-      }
-    }
-  } catch (e) {
-    console.error('Cleanup error:', e);
-  }
+  const activeRoomIds = new Set(roomManager.rooms.keys());
+  storageManager.cleanupOrphanFiles(activeRoomIds);
 }, 60 * 60 * 1000);
 
 // WebSocket connection handler
@@ -143,11 +148,17 @@ app.get('/health', (req, res) => {
     totalClients += room.clients.size;
   }
 
+  const storageStats = storageManager.getStats();
+
   res.json({ 
     status: 'ok', 
     rooms: roomCount, 
     clients: totalClients,
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    storage: {
+      used: storageStats.totalFormatted,
+      max: storageStats.maxTotalFormatted
+    }
   });
 });
 

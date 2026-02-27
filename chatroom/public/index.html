@@ -302,6 +302,14 @@ input:focus, textarea:focus {
   animation: pulse 1s ease-in-out infinite;
 }
 
+  
+    .file-msg { display:flex; align-items:center; gap:12px; padding:8px; background:rgba(255,255,255,0.05); border-radius:10px; }
+    .file-icon { font-size:32px; }
+    .file-info { flex:1; min-width:0; }
+    .file-name { font-weight:600; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .file-size { font-size:12px; color:var(--muted); margin-top:2px; }
+    .file-download { padding:6px 12px; background:var(--primary); color:#fff; border-radius:8px; text-decoration:none; font-size:13px; white-space:nowrap; }
+    .file-download:hover { opacity:0.9; }
   </style>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💬</text></svg>">
   <meta name="description" content="轻量级临时聊天室，支持实时通讯和文件分享">
@@ -339,8 +347,8 @@ input:focus, textarea:focus {
 
         <div class="footer">
           <textarea id="text" placeholder="输入消息..." style="flex:1;"></textarea>
-          <input id="file" type="file" accept="image/*" style="display:none" />
-          <button id="upload" class="uploadBtn">图片</button>
+          <input id="file" type="file" style="display:none" />
+          <button id="upload" class="uploadBtn">文件</button>
           <button id="send">发送</button>
         </div>
       </div>
@@ -494,6 +502,50 @@ input:focus, textarea:focus {
     if (imgEl) imgEl.onclick = () => { modalImg.src = imgEl.dataset.src; modal.style.display = 'flex'; };
   }
 
+
+  function addFile(msg){
+    const row = document.createElement('div');
+    row.className = 'msgRow ' + (msg.name === currentName ? 'me' : 'other');
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    
+    const fileIcon = getFileIcon(msg.mime, msg.original);
+    const fileHtml = `
+      <div class="file-msg">
+        <div class="file-icon">${fileIcon}</div>
+        <div class="file-info">
+          <div class="file-name">${escapeHtml(msg.original)}</div>
+          <div class="file-size">${msg.sizeFormatted || ''}</div>
+        </div>
+        <a href="${msg.url}" class="file-download" download="${escapeHtml(msg.original)}" target="_blank">下载</a>
+      </div>
+    `;
+    
+    const badge = `<span class="name-badge" style="background:${msg.color || '#2f80ed'}"></span>`;
+    if (msg.name !== currentName) {
+      bubble.innerHTML = `<span class="name">${badge}${escapeHtml(msg.name)}</span>${fileHtml}`;
+    } else {
+      bubble.innerHTML = fileHtml;
+    }
+    row.appendChild(bubble);
+    chat.appendChild(row);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function getFileIcon(mime, filename) {
+    if (/^image\//i.test(mime)) return '🖼️';
+    if (/^video\//i.test(mime)) return '🎬';
+    if (/^audio\//i.test(mime)) return '🎵';
+    if (/pdf$/i.test(filename)) return '📄';
+    if (/\.(doc|docx)$/i.test(filename)) return '📝';
+    if (/\.(xls|xlsx)$/i.test(filename)) return '📊';
+    if (/\.(ppt|pptx)$/i.test(filename)) return '📽️';
+    if (/\.(zip|rar|7z|tar|gz)$/i.test(filename)) return '📦';
+    if (/\.(txt|md|log)$/i.test(filename)) return '📃';
+    if (/\.(json|xml|csv)$/i.test(filename)) return '📋';
+    return '📎';
+  }
+
   function setReply(name, text){
     replyTo = { name, text };
     replyName.textContent = name;
@@ -549,6 +601,7 @@ input:focus, textarea:focus {
       if (data.type === 'admin_help') addSystem(data.text, data.ts);
       if (data.type === 'chat') addChat(data);
       if (data.type === 'image') addImage(data);
+      if (data.type === 'file') addFile(data);
       if (data.type === 'members') {
         membersEl.innerHTML = '';
         data.members.forEach(m => {
@@ -626,11 +679,25 @@ input:focus, textarea:focus {
   document.addEventListener('drop', async (e) => { e.preventDefault(); const files = e.dataTransfer?.files || []; if (files.length) await uploadImage(files[0]); });
 
   async function uploadImage(file){
+    const maxSize = 200 * 1024 * 1024; // 200MB
+    if (file.size > maxSize) {
+      addSystem('文件太大，最大 200MB', Date.now());
+      return;
+    }
+    
+    addSystem('正在上传...', Date.now());
     const form = new FormData();
     form.append('file', file);
     const qs = `room=${encodeURIComponent(currentRoom)}&name=${encodeURIComponent(currentName)}&color=${encodeURIComponent(currentColor)}`;
-    const res = await fetch(`/upload?${qs}`, { method:'POST', body: form });
-    if (!res.ok) addSystem('图片上传失败', Date.now());
+    try {
+      const res = await fetch(`/upload?${qs}`, { method:'POST', body: form });
+      const data = await res.json();
+      if (!res.ok) {
+        addSystem(`上传失败: ${data.error || '未知错误'}`, Date.now());
+      }
+    } catch (e) {
+      addSystem('上传失败', Date.now());
+    }
   }
 
   window.copyBlock = (btn) => {

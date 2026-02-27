@@ -2,8 +2,9 @@ const WebSocket = require('ws');
 const config = require('./config');
 
 class RoomManager {
-  constructor() {
+  constructor(storageManager) {
     this.rooms = new Map();
+    this.storageManager = storageManager;
   }
 
   getRoom(roomId) {
@@ -58,6 +59,12 @@ class RoomManager {
     if (room.timer) clearTimeout(room.timer);
     for (const timer of room.ghostCleanupTimers.values()) {
       clearTimeout(timer);
+    }
+
+    // Clean up room files
+    if (this.storageManager) {
+      const cleaned = this.storageManager.cleanupRoom(roomId);
+      console.log(`Room ${roomId} expired, cleaned ${cleaned} files`);
     }
 
     this.rooms.delete(roomId);
