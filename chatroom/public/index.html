@@ -499,6 +499,36 @@ input:focus, textarea:focus {
     return t;
   }
 
+  function openVideoModal(url, name, mime) {
+    const videoModal = document.getElementById('videoModal');
+    const videoPlayer = document.getElementById('videoPlayer');
+    const videoTitle = document.getElementById('videoTitle');
+    
+    if (!videoModal || !videoPlayer || !videoTitle) {
+      console.error('Video modal elements not found');
+      return;
+    }
+    
+    videoPlayer.src = url;
+    videoPlayer.type = mime;
+    videoTitle.textContent = name;
+    videoModal.style.display = 'flex';
+    videoPlayer.play().catch(e => console.error('Play error:', e));
+  }
+  
+  function closeVideoModal() {
+    const videoModal = document.getElementById('videoModal');
+    const videoPlayer = document.getElementById('videoPlayer');
+    
+    if (videoPlayer) {
+      videoPlayer.pause();
+      videoPlayer.src = '';
+    }
+    if (videoModal) {
+      videoModal.style.display = 'none';
+    }
+  }
+
   function addSystem(text, ts) {
     const div = document.createElement('div');
     div.className = 'sys';
