@@ -3,7 +3,7 @@ version: '3.8'
 services:
   chatroom:
     build: .
-    container_name: chatroom-v2
+    container_name: chatroom
     restart: unless-stopped
     ports:
       - "28881:28881"

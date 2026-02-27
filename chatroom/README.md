@@ -1,4 +1,4 @@
-# Chatroom V2 - 临时云聊天室
+# Chatroom - 临时云聊天室
 
 轻量级临时聊天室，支持实时通讯和文件分享。专为低资源环境优化，可在 64MB+ 内存的 VPS 上稳定运行。
 
@@ -21,14 +21,14 @@
 ```bash
 # 下载项目
 git clone https://github.com/lemmomay/22-claw.git
-cd 22-claw/chatroom-v2
+cd 22-claw/chatroom
 
 # 运行安装脚本
-chmod +x install.sh
-./install.sh install
+chmod +x chatroom.sh
+./chatroom.sh install
 
 # 或指定端口
-./install.sh install 8080
+./chatroom.sh install 8080
 ```
 
 安装脚本会自动：
@@ -68,13 +68,13 @@ PORT=28881 nohup node server.js > chatroom.log 2>&1 &
 安装后可使用脚本管理服务：
 
 ```bash
-./install.sh start      # 启动服务
-./install.sh stop       # 停止服务
-./install.sh restart    # 重启服务
-./install.sh status     # 查看状态
-./install.sh logs       # 查看日志
-./install.sh uninstall  # 卸载服务
-./install.sh check      # 检查依赖
+./chatroom.sh start      # 启动服务
+./chatroom.sh stop       # 停止服务
+./chatroom.sh restart    # 重启服务
+./chatroom.sh status     # 查看状态
+./chatroom.sh logs       # 查看日志
+./chatroom.sh uninstall  # 卸载服务
+./chatroom.sh check      # 检查依赖
 ```
 
 或使用系统命令：
@@ -168,10 +168,10 @@ iptables -A INPUT -p tcp --dport 28881 -j ACCEPT
 ### 3. 定期更新
 
 ```bash
-cd /root/chatroom-v2
+cd /root/chatroom
 git pull
 npm install --production
-./install.sh restart
+./chatroom.sh restart
 ```
 
 ## 📝 管理员命令
@@ -216,7 +216,7 @@ ws://host:port/?room=<roomId>&name=<name>&pass=<password>&durationHours=<hours>&
 ss -tlnp | grep 28881
 
 # 查看日志
-./install.sh logs
+./chatroom.sh logs
 # 或
 tail -50 /var/log/chatroom.log
 
@@ -246,12 +246,12 @@ systemctl restart chatroom
 
 ```bash
 # 重新安装依赖
-cd /root/chatroom-v2
+cd /root/chatroom
 rm -rf node_modules package-lock.json
 npm install --production
 
 # 重启服务
-./install.sh restart
+./chatroom.sh restart
 ```
 
 ## 📚 更多文档

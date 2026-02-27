@@ -26,7 +26,7 @@ version: '3.8'
 services:
   chatroom:
     build: .
-    container_name: chatroom-v2
+    container_name: chatroom
     restart: unless-stopped
     ports:
       - "28881:28881"
@@ -157,7 +157,7 @@ volumes:
 ```yaml
 services:
   chatroom:
-    image: your-username/chatroom-v2:latest
+    image: your-username/chatroom:latest
     # ... 其他配置
 ```
 
@@ -171,7 +171,7 @@ version: '3.8'
 services:
   chatroom-1:
     build: .
-    container_name: chatroom-v2-1
+    container_name: chatroom-1
     restart: unless-stopped
     ports:
       - "28881:28881"
@@ -179,7 +179,7 @@ services:
 
   chatroom-2:
     build: .
-    container_name: chatroom-v2-2
+    container_name: chatroom-2
     restart: unless-stopped
     ports:
       - "28882:28881"
@@ -288,7 +288,7 @@ docker-compose down
 docker-compose down -v
 
 # 查看资源使用
-docker stats chatroom-v2
+docker stats chatroom
 ```
 
 ## 故障排查

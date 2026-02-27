@@ -3,7 +3,7 @@ set -e
 
 # 配置
 APP_NAME="chatroom"
-APP_DIR="/root/chatroom-v2"
+APP_DIR="/root/chatroom"
 DEFAULT_PORT=28881
 LOG_FILE="/var/log/chatroom.log"
 
@@ -164,8 +164,8 @@ install_service() {
             # 生成 service 文件
             cat > /etc/systemd/system/${APP_NAME}.service << EOF
 [Unit]
-Description=Chatroom V2 - Temporary Chatroom Service
-Documentation=https://github.com/lemmomay/22-claw/tree/master/chatroom-v2
+Description=Chatroom - Temporary Chatroom Service
+Documentation=https://github.com/lemmomay/22-claw/tree/master/chatroom
 After=network.target
 
 [Service]
@@ -209,7 +209,7 @@ name="chatroom"
 description="Temporary Chatroom Service"
 
 : ${chatroom_user:="root"}
-: ${chatroom_dir:="/root/chatroom-v2"}
+: ${chatroom_dir:="/root/chatroom"}
 : ${chatroom_port:="28881"}
 : ${chatroom_log:="/var/log/chatroom.log"}
 : ${chatroom_pidfile:="/var/run/chatroom.pid"}
@@ -427,13 +427,13 @@ view_logs() {
 do_install() {
     echo ""
     echo "╔════════════════════════════════════════╗"
-    echo "║   Chatroom V2 安装脚本                 ║"
+    echo "║   Chatroom 安装脚本                 ║"
     echo "╚════════════════════════════════════════╝"
     echo ""
     
     # 检查是否在项目目录
     if [ ! -f "server.js" ] || [ ! -f "package.json" ]; then
-        print_error "请在 chatroom-v2 目录下运行此脚本"
+        print_error "请在 chatroom 目录下运行此脚本"
         exit 1
     fi
     
@@ -537,7 +537,7 @@ do_install() {
 # 卸载
 do_uninstall() {
     echo ""
-    print_warning "即将卸载 Chatroom V2"
+    print_warning "即将卸载 Chatroom"
     printf "确认卸载? [y/N] "
     read -r answer
     case "$answer" in
@@ -578,7 +578,7 @@ do_uninstall() {
 # 显示帮助
 show_help() {
     cat << EOF
-Chatroom V2 管理脚本
+Chatroom 管理脚本
 
 用法: $0 [命令] [选项]
 

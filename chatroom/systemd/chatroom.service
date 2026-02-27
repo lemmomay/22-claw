@@ -1,12 +1,12 @@
 [Unit]
-Description=Chatroom V2 - Temporary Chatroom Service
-Documentation=https://github.com/lemmomay/22-claw/tree/master/chatroom-v2
+Description=Chatroom - Temporary Chatroom Service
+Documentation=https://github.com/lemmomay/22-claw/tree/master/chatroom
 After=network.target
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/root/chatroom-v2
+WorkingDirectory=/root/chatroom
 ExecStart=/usr/bin/node server.js
 Restart=on-failure
 RestartSec=10
@@ -18,7 +18,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/root/chatroom-v2/public/uploads
+ReadWritePaths=/root/chatroom/public/uploads
 
 # Resource limits
 LimitNOFILE=4096

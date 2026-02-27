@@ -7,7 +7,7 @@ description="Temporary Chatroom Service"
 
 # Configuration
 : ${chatroom_user:="root"}
-: ${chatroom_dir:="/root/chatroom-v2"}
+: ${chatroom_dir:="/root/chatroom"}
 : ${chatroom_log:="/var/log/chatroom.log"}
 : ${chatroom_pidfile:="/var/run/chatroom.pid"}
 
