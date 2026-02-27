@@ -103,6 +103,8 @@ app.post('/upload', (req, res, next) => {
         msgType = 'image';
       } else if (/^video\//i.test(mime)) {
         msgType = 'video';
+      } else if (/^audio\//i.test(mime)) {
+        msgType = 'audio';
       }
       
       roomManager.broadcast(roomId, {

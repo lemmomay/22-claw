@@ -7,8 +7,8 @@ module.exports = {
   MAX_ROOM_STORAGE: 500 * 1024 * 1024, // 500MB 每个房间总存储
   MAX_TOTAL_STORAGE: 2 * 1024 * 1024 * 1024, // 2GB 全局总存储（留点余量）
   
-  // 允许的文件类型（图片 + 常见文件）
-  ALLOWED_FILE_TYPES: /\.(jpg|jpeg|png|gif|webp|bmp|svg|mp4|mov|avi|mkv|pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|7z|tar|gz|txt|md|json|xml|csv|log)$/i,
+  // 允许所有文件类型（不再限制）
+  ALLOWED_FILE_TYPES: /.*/i, // 允许所有文件
   
   // 房间设置
   MIN_DURATION_HOURS: 1,
