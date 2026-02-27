@@ -1,0 +1,324 @@
+#!/usr/bin/env bash
+# claw22 - OpenClaw 管理工具
+# 作者: 22 & 11
+# 版本: 1.0.0
+
+set -euo pipefail
+
+APP="openclaw"
+CFG="${HOME}/.openclaw/openclaw.json"
+LOG_HINT="journalctl -u openclaw -n 100 --no-pager"
+CLAW_CMD="${CLAW_CMD:-openclaw}"
+
+# 颜色函数
+red(){ printf "\033[31m%s\033[0m\n" "$*"; }
+green(){ printf "\033[32m%s\033[0m\n" "$*"; }
+yellow(){ printf "\033[33m%s\033[0m\n" "$*"; }
+blue(){ printf "\033[36m%s\033[0m\n" "$*"; }
+
+press_enter(){ read -r -p "回车继续... " _; }
+has_cmd(){ command -v "$1" >/dev/null 2>&1; }
+
+show_header() {
+  clear || true
+  blue "=============================="
+  blue "      claw22 管理面板"
+  blue "=============================="
+  echo "时间: $(date '+%F %T')"
+  echo
+}
+
+# OpenClaw 状态
+oc_status() {
+  echo ">>> OpenClaw Gateway 状态"
+  if has_cmd "$CLAW_CMD"; then
+    "$CLAW_CMD" gateway status 2>&1 || true
+  else
+    red "未找到命令: $CLAW_CMD"
+  fi
+  echo
+  echo ">>> 相关进程"
+  ps -ef | grep -E 'openclaw|openclaw-gateway|node.*openclaw' | grep -v grep || echo "无相关进程"
+}
+
+# 启动/停止/重启
+oc_start() {
+  echo "启动 OpenClaw Gateway..."
+  "$CLAW_CMD" gateway start || true
+  sleep 2
+  oc_status
+}
+
+oc_stop() {
+  echo "停止 OpenClaw Gateway..."
+  "$CLAW_CMD" gateway stop || true
+  sleep 1
+  oc_status
+}
+
+oc_restart() {
+  echo "重启 OpenClaw Gateway..."
+  "$CLAW_CMD" gateway restart || true
+  sleep 2
+  oc_status
+}
+
+# 清理卡住的进程
+kill_stuck_procs() {
+  echo "清理可能卡住的进程..."
+  pkill -f 'openclaw-gateway' 2>/dev/null || true
+  pkill -f 'node.*openclaw' 2>/dev/null || true
+  sleep 1
+  green "进程清理完成"
+}
+
+# 查找网关端口
+find_gateway_port() {
+  local p=""
+  if [[ -f "$CFG" ]] && has_cmd jq; then
+    p="$(jq -r '.gateway.port // empty' "$CFG" 2>/dev/null || true)"
+  fi
+  echo "${p:-32189}"
+}
+
+# 释放端口占用
+free_gateway_port_if_needed() {
+  local port
+  port="$(find_gateway_port)"
+  echo "检查网关端口: $port"
+  if has_cmd lsof; then
+    local pids
+    pids="$(lsof -t -iTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)"
+    if [[ -n "${pids}" ]]; then
+      yellow "端口 $port 被占用，清理 PID: $pids"
+      kill -9 $pids 2>/dev/null || true
+      sleep 1
+      green "端口已释放"
+    else
+      green "端口 $port 正常"
+    fi
+  else
+    yellow "未安装 lsof，跳过端口检查"
+  fi
+}
+
+# 强制重启
+gateway_force_restart() {
+  yellow "=== 强制重启 Gateway ==="
+  kill_stuck_procs
+  free_gateway_port_if_needed
+  echo "启动 Gateway..."
+  "$CLAW_CMD" gateway start || true
+  sleep 2
+  oc_status
+}
+
+# 一键急救
+gateway_rescue() {
+  yellow "=== 一键急救修复 ==="
+  echo "1. 停止服务..."
+  "$CLAW_CMD" gateway stop 2>/dev/null || true
+  sleep 1
+  
+  echo "2. 清理进程..."
+  kill_stuck_procs
+  
+  echo "3. 释放端口..."
+  free_gateway_port_if_needed
+  
+  echo "4. 启动服务..."
+  "$CLAW_CMD" gateway start || true
+  sleep 2
+  
+  echo "5. 验证状态..."
+  oc_status
+  
+  green "急救完成！"
+}
+
+# 查看日志
+show_logs() {
+  echo ">>> 最近 100 行日志"
+  if has_cmd journalctl; then
+    journalctl -u openclaw -n 100 --no-pager 2>/dev/null || {
+      yellow "journalctl 无法读取，尝试其他方式..."
+      echo "$LOG_HINT"
+    }
+  else
+    yellow "系统无 journalctl"
+    echo "$LOG_HINT"
+  fi
+}
+
+# 查看配置
+config_view() {
+  if [[ -f "$CFG" ]]; then
+    echo ">>> 配置文件 (前 200 行)"
+    if has_cmd jq; then
+      jq . "$CFG" 2>/dev/null | head -200 || cat "$CFG" | head -200
+    else
+      cat "$CFG" | head -200
+    fi
+  else
+    red "配置文件不存在: $CFG"
+  fi
+}
+
+# 备份配置
+config_backup() {
+  if [[ -f "$CFG" ]]; then
+    local bk="${CFG}.manual.$(date +%Y%m%d_%H%M%S)"
+    cp "$CFG" "$bk"
+    green "已备份到: $bk"
+  else
+    red "配置文件不存在: $CFG"
+  fi
+}
+
+# 编辑配置
+config_edit() {
+  if [[ ! -f "$CFG" ]]; then
+    red "配置文件不存在: $CFG"
+    return
+  fi
+  
+  # 先备份
+  local bk="${CFG}.before_edit.$(date +%Y%m%d_%H%M%S)"
+  cp "$CFG" "$bk"
+  yellow "已自动备份到: $bk"
+  
+  # 编辑
+  if has_cmd nano; then
+    nano "$CFG"
+  elif has_cmd vi; then
+    vi "$CFG"
+  else
+    red "未找到编辑器 (nano/vi)"
+    return
+  fi
+  
+  # 验证 JSON
+  if has_cmd jq; then
+    if jq empty "$CFG" 2>/dev/null; then
+      green "JSON 格式正确"
+      read -r -p "是否重启 Gateway 使配置生效? (y/N): " confirm
+      if [[ "${confirm,,}" == "y" ]]; then
+        oc_restart
+      fi
+    else
+      red "JSON 格式错误！已保留备份: $bk"
+      read -r -p "是否恢复备份? (y/N): " restore
+      if [[ "${restore,,}" == "y" ]]; then
+        cp "$bk" "$CFG"
+        green "已恢复备份"
+      fi
+    fi
+  else
+    yellow "未安装 jq，无法验证 JSON 格式"
+  fi
+}
+
+# API 模型查询
+api_model_checker_ui() {
+  echo "=== API 模型查询工具 ==="
+  echo
+  read -r -p "Base URL (如 https://kfc-api.sxxe.net/v1): " base
+  read -r -p "API Key: " key
+  
+  if [[ -z "$base" || -z "$key" ]]; then
+    red "Base URL 和 API Key 不能为空"
+    return
+  fi
+  
+  echo
+  echo "查询中..."
+  
+  if ! has_cmd curl; then
+    red "缺少 curl 命令"
+    return
+  fi
+  
+  if ! has_cmd jq; then
+    red "缺少 jq 命令"
+    return
+  fi
+  
+  local resp
+  resp="$(curl -s "${base%/}/models" -H "Authorization: Bearer ${key}" 2>&1)"
+  
+  if echo "$resp" | jq -e '.data' >/dev/null 2>&1; then
+    green "✓ 支持的模型："
+    echo
+    echo "$resp" | jq -r '.data[]?.id' | nl -w3 -s'. ' || echo "$resp"
+  else
+    red "✗ 查询失败或返回格式异常"
+    echo "原始响应:"
+    echo "$resp"
+  fi
+}
+
+# 安装快捷命令
+install_shortcut() {
+  local target="/usr/local/bin/claw22"
+  
+  if [[ -f "$target" ]]; then
+    yellow "快捷命令已存在: $target"
+    read -r -p "是否覆盖? (y/N): " confirm
+    [[ "${confirm,,}" != "y" ]] && return
+  fi
+  
+  if [[ "$(id -u)" -ne 0 ]]; then
+    yellow "需要 sudo 权限安装到 ${target}"
+    sudo cp "$0" "$target" && sudo chmod +x "$target"
+  else
+    cp "$0" "$target" && chmod +x "$target"
+  fi
+  
+  green "✓ 已安装快捷命令: claw22"
+  echo "现在可以直接运行: claw22"
+}
+
+# 主菜单
+main_menu() {
+  while true; do
+    show_header
+    cat <<'EOF'
+ 1) 状态总览
+ 2) 启动 Gateway
+ 3) 停止 Gateway
+ 4) 重启 Gateway
+ 5) 强制重启 (清理进程+端口)
+ 6) 一键急救 (stop→清理→start→验证)
+ 7) 查看日志 (最近100行)
+ 8) 查看配置 (前200行)
+ 9) 编辑配置 (自动备份+验证)
+10) 手动备份配置
+11) API 模型查询
+12) 安装快捷命令 (/usr/local/bin/claw22)
+ 0) 退出
+
+EOF
+    read -r -p "请选择 [0-12]: " choice
+    echo
+    
+    case "${choice:-}" in
+      1) oc_status; press_enter ;;
+      2) oc_start; press_enter ;;
+      3) oc_stop; press_enter ;;
+      4) oc_restart; press_enter ;;
+      5) gateway_force_restart; press_enter ;;
+      6) gateway_rescue; press_enter ;;
+      7) show_logs; press_enter ;;
+      8) config_view; press_enter ;;
+      9) config_edit; press_enter ;;
+      10) config_backup; press_enter ;;
+      11) api_model_checker_ui; press_enter ;;
+      12) install_shortcut; press_enter ;;
+      0) green "再见！"; exit 0 ;;
+      *) red "无效选项"; press_enter ;;
+    esac
+  done
+}
+
+# 运行主菜单
+main_menu
