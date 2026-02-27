@@ -55,6 +55,8 @@
     .imgMsg { max-width: 220px; border-radius:10px; border:1px solid var(--border); cursor:zoom-in; }
     .member-list { margin-top:12px; border-top:1px dashed var(--border); padding-top:10px; }
     .member { display:flex; align-items:center; gap:8px; font-size:14px; margin:6px 0; }
+    .member { cursor:pointer; transition:background 0.2s; }
+    .member:hover { background:rgba(255,255,255,0.1); border-radius:4px; }
     .member .dot { width:8px; height:8px; border-radius:50%; }
 
     .modal { position:fixed; inset:0; background:rgba(0,0,0,.65); display:none; align-items:center; justify-content:center; z-index:999; }
@@ -305,6 +307,19 @@ input:focus, textarea:focus {
   
 
 
+
+    /* @ 提及样式 */
+    .mention { background:rgba(47,128,237,0.2); padding:2px 4px; border-radius:4px; font-weight:600; }
+    .mention-me { background:rgba(237,47,47,0.3); color:#ff6b6b; animation:pulse 1s ease-in-out; }
+    
+    /* 消息高亮动画 */
+    .msgRow.highlight { animation:highlight 2s ease-in-out; }
+    @keyframes highlight { 0%, 100% { background:transparent; } 50% { background:rgba(47,128,237,0.2); } }
+    @keyframes pulse { 0%, 100% { opacity:1; } 50% { opacity:0.7; } }
+    
+    /* 用户列表样式 */
+    #members li { transition:background 0.2s; }
+    #members li:hover { background:rgba(255,255,255,0.1); border-radius:4px; padding-left:4px; }
     /* 音频消息 */
     .audio-msg { max-width:100%; }
     .audioMsg { width:100%; max-width:300px; height:40px; }
@@ -458,6 +473,11 @@ input:focus, textarea:focus {
     t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     t = t.replace(/\*([^*]+)\*\*/g, '<em>$1</em>');
     t = t.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+    // @ 提及检测
+    t = t.replace(/@([^\s@<]+)/g, (match, name) => {
+      const isMentioned = name === currentName;
+      return `<span class="mention ${isMentioned ? 'mention-me' : ''}">${match}</span>`;
+    });
     t = t.replace(/\n/g, '<br/>');
     t = t.replace(/@@CODE(\d+)@@/g, (m, id) => {
       const safe = escapeHtml(blocks[Number(id)]?.trim() || '');
@@ -492,7 +512,7 @@ input:focus, textarea:focus {
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
     const replyHtml = msg.replyTo ? `
-      <div class="reply-quote">
+      <div class="reply-quote" onclick="scrollToMessage(${msg.replyTo.ts})">
         <div class="reply-line"></div>
         <div class="reply-content">
           <div class="reply-author">${escapeHtml(msg.replyTo.name)}</div>
@@ -726,6 +746,13 @@ input:focus, textarea:focus {
           const div = document.createElement('div');
           div.className = 'member';
           div.innerHTML = `<span class="dot" style="background:${m.color}"></span>${escapeHtml(m.name)}`;
+          div.style.cursor = 'pointer';
+          // 双击 @ 用户
+          div.addEventListener('dblclick', () => {
+            const input = document.getElementById('msg');
+            input.value += '@' + m.name + ' ';
+            input.focus();
+          });
           membersEl.appendChild(div);
         });
       }
@@ -807,7 +834,8 @@ input:focus, textarea:focus {
     
     const form = new FormData();
     form.append('file', file);
-    const qs = `room=${encodeURIComponent(currentRoom)}&name=${encodeURIComponent(currentName)}&color=${encodeURIComponent(currentColor)}`;
+    // 文件名也需要编码，避免中文乱码
+    const qs = `room=${encodeURIComponent(currentRoom)}&name=${encodeURIComponent(currentName)}&color=${encodeURIComponent(currentColor)}&filename=${encodeURIComponent(file.name)}`;
     
     const xhr = new XMLHttpRequest();
     
