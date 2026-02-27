@@ -67,11 +67,249 @@
       .chat { height: 360px; }
       .row input, .row select, .row button { flex: 1 1 100%; }
     }
+  
+/* 优化后的样式增强 */
+
+/* 渐变背景 */
+body {
+  background: linear-gradient(135deg, #0f1115 0%, #1a1d28 100%);
+  min-height: 100vh;
+}
+
+/* 标题美化 */
+h2 {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 28px;
+  font-weight: 700;
+  margin: 20px 0;
+  text-align: center;
+}
+
+/* 卡片阴影效果 */
+.card, .side {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+}
+
+/* 按钮优化 */
+button {
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(58, 123, 213, 0.4);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 输入框焦点效果 */
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(58, 123, 213, 0.1);
+}
+
+/* 消息气泡动画 */
+.msgRow {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 在线状态指示 */
+.member .dot {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* 加载状态 */
+.loading {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 工具链接悬停效果 */
+.tool-link {
+  transition: all 0.2s;
+}
+
+.tool-link:hover {
+  background: #2a3040;
+  transform: translateX(4px);
+}
+
+/* 图片预览优化 */
+.imgMsg {
+  transition: transform 0.2s;
+}
+
+.imgMsg:hover {
+  transform: scale(1.05);
+}
+
+/* 滚动条美化 */
+.chat::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat::-webkit-scrollbar-track {
+  background: #0b0d12;
+  border-radius: 4px;
+}
+
+.chat::-webkit-scrollbar-thumb {
+  background: #2a3040;
+  border-radius: 4px;
+}
+
+.chat::-webkit-scrollbar-thumb:hover {
+  background: #3a4050;
+}
+
+/* 回复框优化 */
+.replyBox {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 系统消息优化 */
+.sys {
+  animation: fadeIn 0.4s ease-out;
+  padding: 8px 16px;
+  background: rgba(138, 160, 255, 0.1);
+  border-radius: 20px;
+  display: inline-block;
+  margin: 8px auto;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 颜色选择器优化 */
+.color-dot {
+  transition: all 0.2s;
+}
+
+.color-dot:hover {
+  transform: scale(1.2);
+}
+
+/* Emoji 按钮优化 */
+.emoji button:hover {
+  background: #2a3040;
+  transform: scale(1.1);
+}
+
+/* 提示文本优化 */
+.hint {
+  padding: 8px 12px;
+  background: rgba(154, 164, 178, 0.1);
+  border-radius: 8px;
+  border-left: 3px solid var(--primary);
+}
+
+/* 模态框优化 */
+.modal {
+  backdrop-filter: blur(8px);
+}
+
+.modal img {
+  animation: zoomIn 0.3s ease-out;
+}
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 连接状态指示 */
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.status-connected {
+  background: #00b894;
+  box-shadow: 0 0 8px rgba(0, 184, 148, 0.6);
+}
+
+.status-disconnected {
+  background: #d63031;
+}
+
+.status-connecting {
+  background: #fdcb6e;
+  animation: pulse 1s ease-in-out infinite;
+}
+
   </style>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💬</text></svg>">
+  <meta name="description" content="轻量级临时聊天室，支持实时通讯和文件分享">
+  <meta name="keywords" content="临时聊天室,在线聊天,文件分享">
 </head>
 <body>
   <div class="wrap">
-    <h2>临时云聊天室</h2>
+    <h2><span id="statusIndicator" class="status-indicator status-disconnected"></span>临时云聊天室</h2>
     <div class="layout">
       <div class="card">
         <div class="row">
@@ -84,7 +322,7 @@
           </div>
           <div id="colorPicker" class="color-picker"></div>
           <input id="color" type="hidden" value="#2f80ed" />
-          <button id="join">进入房间</button>
+          <button id="join"><span id="joinText">进入房间</span></button>
         </div>
         <div class="hint">分享链接：<span id="share">—</span> <button id="copy">复制</button></div>
         <div class="hint" id="roomHint">提示：房间是临时的，不存数据库，重启服务后会清空。</div>
@@ -205,6 +443,17 @@
   }
 
   function addChat(msg) {
+    // 如果不是自己的消息且页面不可见，显示通知
+    if (msg.name !== currentName && document.hidden) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(`${msg.name} 说:`, {
+          body: msg.text.slice(0, 100),
+          icon: '/favicon.ico',
+          tag: 'chatroom-msg'
+        });
+      }
+    }
+    
     const row = document.createElement('div');
     row.className = 'msgRow ' + (msg.name === currentName ? 'me' : 'other');
     const bubble = document.createElement('div');
@@ -267,6 +516,14 @@
   }
 
   function connect() {
+    const statusIndicator = document.getElementById('statusIndicator');
+    const joinBtn = document.getElementById('join');
+    const joinText = document.getElementById('joinText');
+    
+    statusIndicator.className = 'status-indicator status-connecting';
+    joinBtn.disabled = true;
+    joinText.innerHTML = '<span class="loading"></span> 连接中...';
+    
     currentName = nameInput.value.trim() || '匿名';
     currentRoom = roomInput.value.trim() || 'lobby';
     currentColor = colorSelect.value || '#2f80ed';
@@ -277,7 +534,14 @@
     const wsUrl = (location.protocol === 'https:' ? 'wss' : 'ws') + '://' + location.host + '/?room=' + encodeURIComponent(currentRoom) + '&name=' + encodeURIComponent(currentName) + '&pass=' + encodeURIComponent(pass) + '&durationHours=' + encodeURIComponent(durationHours) + '&color=' + encodeURIComponent(currentColor) + '&device=' + encodeURIComponent(deviceId);
     ws = new WebSocket(wsUrl);
 
-    ws.onopen = () => { addSystem(`已进入房间：${currentRoom}`, Date.now()); updateShareLink(); };
+    ws.onopen = () => { 
+      statusIndicator.className = 'status-indicator status-connected';
+      joinBtn.disabled = false;
+      joinText.textContent = '已连接';
+      setTimeout(() => joinText.textContent = '进入房间', 2000);
+      addSystem(`已进入房间：${currentRoom}`, Date.now()); 
+      updateShareLink(); 
+    };
 
     ws.onmessage = (e) => {
       const data = JSON.parse(e.data);
@@ -314,7 +578,12 @@
       }
     };
 
-    ws.onclose = () => addSystem('连接已断开', Date.now());
+    ws.onclose = () => {
+      statusIndicator.className = 'status-indicator status-disconnected';
+      joinBtn.disabled = false;
+      joinText.textContent = '进入房间';
+      addSystem('连接已断开', Date.now());
+    };
   }
 
   joinBtn.onclick = () => {
@@ -373,6 +642,20 @@
   window.toggleCode = (btn) => {
     const pre = btn.closest('pre'); if (!pre) return; const expanded = pre.classList.toggle('expanded'); pre.classList.toggle('collapsed', !expanded); btn.textContent = expanded ? '收起' : '展开';
   };
+
+  // 请求通知权限
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+
+  // URL 参数自动加入
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('room')) {
+    roomInput.value = urlParams.get('room');
+    if (urlParams.get('name')) nameInput.value = urlParams.get('name');
+    // 自动连接
+    setTimeout(() => joinBtn.click(), 500);
+  }
 </script>
 </body>
 </html>
