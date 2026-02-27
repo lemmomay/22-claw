@@ -16,29 +16,57 @@
 
 ## 🚀 快速开始
 
-### 一键安装（推荐）
+### 方式一：交互式菜单（推荐）
 
 ```bash
 # 下载项目
 git clone https://github.com/lemmomay/22-claw.git
 cd 22-claw/chatroom
 
-# 运行安装脚本
-chmod +x chatroom.sh
-./chatroom.sh install
-
-# 或指定端口
-./chatroom.sh install 8080
+# 运行管理脚本（进入交互式菜单）
+./chatroom.sh
 ```
 
-安装脚本会自动：
-- ✅ 检测系统类型（systemd/OpenRC）
-- ✅ 检查并安装依赖（Node.js 18+）
-- ✅ 配置端口
-- ✅ 安装系统服务
-- ✅ 启动服务
+**菜单界面：**
+```
+╔════════════════════════════════════════╗
+║       Chatroom 管理面板                ║
+╚════════════════════════════════════════╝
 
-### Docker 部署
+  服务状态: ● 运行中
+
+  1. 安装服务
+  2. 启动服务
+  3. 停止服务
+  4. 重启服务
+  5. 查看状态
+  6. 查看日志
+  7. 检查依赖
+  8. 卸载服务
+  0. 退出
+
+  请选择 [0-8]:
+```
+
+### 方式二：命令行模式
+
+```bash
+# 安装
+./chatroom.sh install
+
+# 指定端口安装
+./chatroom.sh install 8080
+
+# 管理服务
+./chatroom.sh start      # 启动
+./chatroom.sh stop       # 停止
+./chatroom.sh restart    # 重启
+./chatroom.sh status     # 状态
+./chatroom.sh logs       # 日志
+./chatroom.sh uninstall  # 卸载
+```
+
+### 方式三：Docker 部署
 
 ```bash
 # 使用 docker-compose
@@ -50,34 +78,9 @@ docker-compose logs -f
 
 详细配置请参考 [DOCKER.md](./DOCKER.md)
 
-### 手动部署
+## 🔧 系统服务管理
 
-```bash
-# 安装依赖
-npm install --production
-
-# 启动服务
-PORT=28881 node server.js
-
-# 或后台运行
-PORT=28881 nohup node server.js > chatroom.log 2>&1 &
-```
-
-## 🔧 管理命令
-
-安装后可使用脚本管理服务：
-
-```bash
-./chatroom.sh start      # 启动服务
-./chatroom.sh stop       # 停止服务
-./chatroom.sh restart    # 重启服务
-./chatroom.sh status     # 查看状态
-./chatroom.sh logs       # 查看日志
-./chatroom.sh uninstall  # 卸载服务
-./chatroom.sh check      # 检查依赖
-```
-
-或使用系统命令：
+安装后也可以使用系统命令：
 
 **systemd (Ubuntu/Debian/CentOS):**
 ```bash
@@ -131,6 +134,7 @@ module.exports = {
 - **内存**: ~40-50MB
 - **磁盘**: ~180MB (含 node_modules)
 - **CPU**: 空闲时 <1%
+- **脚本**: 几乎无占用（仅在执行时运行）
 
 ## 🔒 安全建议
 
@@ -212,34 +216,25 @@ ws://host:port/?room=<roomId>&name=<name>&pass=<password>&durationHours=<hours>&
 ### 服务无法启动
 
 ```bash
-# 检查端口占用
-ss -tlnp | grep 28881
+# 使用脚本检查
+./chatroom.sh status
 
 # 查看日志
 ./chatroom.sh logs
-# 或
-tail -50 /var/log/chatroom.log
 
-# 检查 Node.js 版本（需要 18+）
-node --version
+# 检查依赖
+./chatroom.sh
+# 然后选择 7 (检查依赖)
 ```
 
-### 内存不足
+### 端口被占用
 
-编辑 systemd service 文件：
 ```bash
-nano /etc/systemd/system/chatroom.service
-```
+# 查看端口占用
+ss -tlnp | grep 28881
 
-增加内存限制：
-```ini
-MemoryMax=256M
-```
-
-重载并重启：
-```bash
-systemctl daemon-reload
-systemctl restart chatroom
+# 或使用脚本重新安装并指定其他端口
+./chatroom.sh install 8080
 ```
 
 ### 依赖问题
