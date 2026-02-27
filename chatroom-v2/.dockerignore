@@ -1,0 +1,13 @@
+# Docker ignore file
+node_modules/
+npm-debug.log
+*.log
+.git/
+.gitignore
+README.md
+deploy.sh
+*.md
+.env
+.env.*
+public/uploads/*
+!public/uploads/.gitkeep

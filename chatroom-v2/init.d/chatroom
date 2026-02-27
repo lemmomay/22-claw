@@ -1,0 +1,66 @@
+#!/bin/sh
+# Chatroom V2 - OpenRC service script
+# Copy to /etc/init.d/chatroom and run: rc-update add chatroom default
+
+name="chatroom"
+description="Temporary Chatroom Service"
+
+# Configuration
+: ${chatroom_user:="root"}
+: ${chatroom_dir:="/root/chatroom-v2"}
+: ${chatroom_log:="/var/log/chatroom.log"}
+: ${chatroom_pidfile:="/var/run/chatroom.pid"}
+
+command="/usr/bin/node"
+command_args="server.js"
+command_background="yes"
+pidfile="${chatroom_pidfile}"
+directory="${chatroom_dir}"
+
+depend() {
+    need net
+    after firewall
+}
+
+start_pre() {
+    checkpath --directory --owner ${chatroom_user} --mode 0755 $(dirname ${chatroom_log})
+    checkpath --directory --owner ${chatroom_user} --mode 0755 $(dirname ${chatroom_pidfile})
+}
+
+start() {
+    ebegin "Starting ${name}"
+    cd "${directory}" || return 1
+    start-stop-daemon --start \
+        --background \
+        --make-pidfile \
+        --pidfile "${pidfile}" \
+        --user "${chatroom_user}" \
+        --stdout "${chatroom_log}" \
+        --stderr "${chatroom_log}" \
+        --exec "${command}" \
+        -- ${command_args}
+    eend $?
+}
+
+stop() {
+    ebegin "Stopping ${name}"
+    start-stop-daemon --stop \
+        --pidfile "${pidfile}" \
+        --retry 15
+    eend $?
+}
+
+status() {
+    if [ -f "${pidfile}" ]; then
+        if pgrep -F "${pidfile}" > /dev/null 2>&1; then
+            einfo "${name} is running (PID: $(cat ${pidfile}))"
+            return 0
+        else
+            eerror "${name} is not running but pidfile exists"
+            return 1
+        fi
+    else
+        einfo "${name} is not running"
+        return 3
+    fi
+}

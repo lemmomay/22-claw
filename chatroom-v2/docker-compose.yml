@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  chatroom:
+    build: .
+    container_name: chatroom-v2
+    restart: unless-stopped
+    ports:
+      - "28881:28881"
+    environment:
+      - NODE_ENV=production
+      - PORT=28881
+    volumes:
+      # Persist uploads (optional)
+      - ./uploads:/app/public/uploads
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:28881/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    # Resource limits (adjust based on your VPS)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+        reservations:
+          cpus: '0.1'
+          memory: 32M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

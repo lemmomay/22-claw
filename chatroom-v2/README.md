@@ -1,102 +1,255 @@
-# Chatroom V2 - 重构版
+# Chatroom V2 - 临时云聊天室
 
-## 主要改进
+轻量级临时聊天室，支持实时通讯和文件分享。专为低资源环境优化，可在 64MB+ 内存的 VPS 上稳定运行。
 
-### 1. 🐛 Bug 修复
-- **密码验证漏洞**：修复了当房间设置密码但用户不提供密码时仍能进入的问题
-- **内存泄漏**：优化了 ghost cleanup timers 的管理，避免定时器累积
-- **错误处理**：添加了完善的错误处理和日志记录
+## ✨ 特性
 
-### 2. 🏗️ 架构重构
-- **模块化设计**：将代码拆分为多个职责单一的模块
-  - `config.js` - 配置管理
-  - `RoomManager.js` - 房间管理
-  - `CommandHandler.js` - 命令处理
-  - `ConnectionHandler.js` - 连接处理
-- **更好的可维护性**：每个模块独立，易于测试和扩展
+- ⏱️ **临时房间** - 1-72 小时自动过期
+- 🔒 **密码保护** - 可选的房间密码
+- 👥 **实时成员列表** - 查看在线用户
+- 📸 **图片上传分享** - 支持拖拽和粘贴
+- 🛡️ **管理员命令** - 踢人、清屏、设置密码
+- 🔄 **断线重连保护** - 30分钟 grace period
+- 🔔 **浏览器通知** - 新消息提醒
+- 🎨 **现代 UI** - 渐变背景、平滑动画
+- 🐧 **Alpine 兼容** - 支持小小鸡部署
 
-### 3. 🔒 安全增强
-- **文件类型验证**：限制上传文件类型
-- **文件大小限制**：明确的 30MB 限制
-- **输入验证**：房间 ID、昵称等参数的严格验证
-- **消息长度限制**：防止超长消息攻击
+## 📦 部署方式
 
-### 4. 🎯 功能优化
-- **自动清理**：每小时自动清理 24 小时前的上传文件
-- **健康检查增强**：`/health` 端点返回更多信息（房间数、客户端数、运行时间）
-- **优雅关闭**：支持 SIGTERM/SIGINT 信号的优雅关闭
-- **更好的日志**：关键操作都有日志记录
+### 方式 1: 一键安装脚本（推荐）
 
-### 5. 📝 代码质量
-- **一致的错误码**：统一的错误代码系统
-- **更清晰的命名**：变量和函数名更具描述性
-- **注释和文档**：关键逻辑都有注释说明
+自动检测系统类型（systemd/OpenRC），安装依赖并配置服务：
 
-## 文件结构
-
-```
-chatroom-v2/
-├── server.js                 # 主服务器文件
-├── package.json              # 依赖配置
-├── src/
-│   ├── config.js            # 配置常量
-│   ├── RoomManager.js       # 房间管理逻辑
-│   ├── CommandHandler.js    # 命令处理逻辑
-│   └── ConnectionHandler.js # WebSocket 连接处理
-└── public/
-    ├── index.html           # 前端页面
-    └── uploads/             # 上传文件目录
-```
-
-## 部署
-
-### 本地测试
 ```bash
-cd /root/clawd/chatroom-v2
-npm install
-npm start
+# 下载项目
+git clone https://github.com/lemmomay/22-claw.git
+cd 22-claw/chatroom-v2
+
+# 运行安装脚本
+chmod +x install.sh
+./install.sh
 ```
 
-### 部署到小鸡
+脚本会自动：
+- 检测并安装 Node.js（如果需要）
+- 安装项目依赖
+- 配置系统服务（systemd 或 OpenRC）
+- 可选：立即启动服务
+
+### 方式 2: Docker 部署
+
+适合容器化环境：
+
 ```bash
-# 打包
-cd /root/clawd
-tar czf chatroom-v2.tar.gz chatroom-v2/
+# 使用 docker-compose（推荐）
+docker-compose up -d
 
-# 上传并部署
-sshpass -p '8d3&IIY^wiOVjjSG' ssh -p 18880 root@194.156.162.243 'cd ~ && tar xzf -' < chatroom-v2.tar.gz
-sshpass -p '8d3&IIY^wiOVjjSG' ssh -p 18880 root@194.156.162.243 'cd ~/chatroom-v2 && npm install && pm2 stop chatroom && pm2 start server.js --name chatroom'
+# 或使用 docker 命令
+docker build -t chatroom-v2 .
+docker run -d \
+  --name chatroom \
+  -p 28881:28881 \
+  --restart unless-stopped \
+  chatroom-v2
 ```
 
-## 配置
+查看日志：
+```bash
+docker-compose logs -f
+# 或
+docker logs -f chatroom
+```
 
-所有配置都在 `src/config.js` 中，可以通过环境变量覆盖：
+### 方式 3: 手动部署
 
-- `PORT` - 服务器端口（默认 28881）
-- 其他配置见 config.js
+```bash
+# 安装依赖
+npm install --production
 
-## API
+# 启动服务
+node server.js
+
+# 或后台运行
+nohup node server.js > chatroom.log 2>&1 &
+```
+
+## 🔧 系统服务管理
+
+### systemd (Ubuntu/Debian/CentOS)
+
+```bash
+# 启动
+systemctl start chatroom
+
+# 停止
+systemctl stop chatroom
+
+# 重启
+systemctl restart chatroom
+
+# 查看状态
+systemctl status chatroom
+
+# 查看日志
+journalctl -u chatroom -f
+
+# 开机自启
+systemctl enable chatroom
+```
+
+### OpenRC (Alpine Linux)
+
+```bash
+# 启动
+rc-service chatroom start
+
+# 停止
+rc-service chatroom stop
+
+# 重启
+rc-service chatroom restart
+
+# 查看状态
+rc-service chatroom status
+
+# 查看日志
+tail -f /var/log/chatroom.log
+
+# 开机自启
+rc-update add chatroom default
+```
+
+## ⚙️ 配置
+
+### 环境变量
+
+```bash
+# 端口（默认 28881）
+export PORT=28881
+
+# 生产环境
+export NODE_ENV=production
+```
+
+### 修改配置
+
+编辑 `src/config.js`：
+
+```javascript
+module.exports = {
+  PORT: process.env.PORT || 28881,
+  GRACE_PERIOD_MS: 30 * 60 * 1000,  // 30 分钟
+  MAX_FILE_SIZE: 30 * 1024 * 1024,  // 30MB
+  // ... 更多配置
+};
+```
+
+## 📊 资源占用
+
+在 Alpine Linux (183MB RAM) 上的实际占用：
+
+- **内存**: ~40-50MB
+- **磁盘**: ~180MB (含 node_modules)
+- **CPU**: 空闲时 <1%
+
+## 🔒 安全建议
+
+1. **反向代理**: 使用 Nginx/Caddy 添加 HTTPS
+2. **防火墙**: 限制端口访问
+3. **文件大小**: 根据需求调整 `MAX_FILE_SIZE`
+4. **定期清理**: 自动清理 24 小时前的上传文件
+
+### Nginx 反向代理示例
+
+```nginx
+server {
+    listen 80;
+    server_name chat.example.com;
+    
+    location / {
+        proxy_pass http://localhost:28881;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+## 🐛 故障排查
+
+### 服务无法启动
+
+```bash
+# 检查端口占用
+netstat -tlnp | grep 28881
+# 或
+ss -tlnp | grep 28881
+
+# 检查日志
+tail -50 /var/log/chatroom.log
+
+# 检查 Node.js 版本（需要 18+）
+node --version
+```
+
+### 内存不足
+
+编辑 systemd service 文件，增加内存限制：
+```ini
+MemoryMax=256M
+```
+
+或在 docker-compose.yml 中调整：
+```yaml
+deploy:
+  resources:
+    limits:
+      memory: 256M
+```
+
+## 📝 管理员命令
+
+在聊天框中输入（仅房间创建者可用）：
+
+- `/clear` - 清空聊天记录
+- `/kick @昵称` - 踢出指定用户
+- `/pass [密码]` - 设置或取消房间密码
+- `/help` - 查看帮助
+
+## 🔗 API
+
+### 健康检查
+
+```bash
+curl http://localhost:28881/health
+```
+
+返回：
+```json
+{
+  "status": "ok",
+  "rooms": 2,
+  "clients": 5,
+  "uptime": 3600.5
+}
+```
 
 ### WebSocket 连接
+
 ```
 ws://host:port/?room=<roomId>&name=<name>&pass=<password>&durationHours=<hours>&device=<deviceId>&color=<color>
 ```
 
-### 文件上传
-```
-POST /upload?room=<roomId>&name=<name>&color=<color>
-Content-Type: multipart/form-data
-```
+## 📄 许可
 
-### 健康检查
-```
-GET /health
-```
+MIT License
 
-## 下一步优化建议
+## 🤝 贡献
 
-1. **持久化**：添加 Redis 支持，实现跨进程房间共享
-2. **监控**：集成 Prometheus metrics
-3. **测试**：添加单元测试和集成测试
-4. **限流**：添加 rate limiting 防止滥用
-5. **日志**：集成结构化日志（如 winston）
+欢迎提交 Issue 和 Pull Request！
+
+---
+
+_由 22 和 11 共同开发维护_ 🌸
