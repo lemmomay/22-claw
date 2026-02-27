@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>临时云聊天室</title>
+  <style>
+    :root { --bg:#0f1115; --card:#151922; --border:#242a36; --muted:#9aa4b2; --primary:#3a7bd5; --bubble:#252b36; --text:#e6e6e6; }
+    body { margin:0; background:#0f1115; background:var(--bg); color:#e6e6e6; color:var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Arial; }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 16px; }
+    .layout { display:grid; grid-template-columns: 1fr 220px; gap:16px; }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; }
+    .side { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px; }
+    .side h3 { margin:0 0 8px 0; font-size:15px; }
+    .tool-link { display:block; padding:7px 9px; border-radius:10px; background:#1f2430; color:#cbd5e1; text-decoration:none; margin:6px 0; font-size:14px; }
+    .side small { color:var(--muted); }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .color-wrap { margin-top:8px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .color-tip { font-size:12px; color:var(--muted); }
+    .color-picker { display:none; gap:8px; flex-wrap:wrap; align-items:center; }
+    .color-picker.open { display:flex; }
+    .color-dot { width:22px; height:22px; border-radius:50%; border:2px solid #2a3040; padding:0; background:#999; cursor:pointer; }
+    .color-dot.active { border-color:#ffffff; box-shadow:0 0 0 2px rgba(255,255,255,.2); }
+    input, select, textarea, button { font-size:16px; padding:10px 12px; border-radius:10px; border:1px solid #2a3040; background:#0f1115; color:#e6e6e6; }
+    button { cursor:pointer; background:var(--primary); border:none; color:#fff; }
+    .chat { height: 440px; overflow:auto; background:#0b0d12; border:1px solid var(--border); border-radius:12px; padding:14px; margin-top:12px; }
+    .msgRow { display:flex; margin:10px 0; }
+    .msgRow.me { justify-content:flex-end; }
+    .bubble { display:inline-block; padding:10px 14px; border-radius:18px; max-width:72%; word-wrap:break-word; }
+    .me .bubble { background:rgba(58,123,213,.65); color:#fff; border-bottom-right-radius:6px; }
+    .other .bubble { background:rgba(45,53,66,.7); border-bottom-left-radius:6px; }
+    .name { font-weight:600; margin-bottom:6px; display:flex; align-items:center; gap:8px; }
+    .name-badge { width:10px; height:10px; border-radius:50%; display:inline-block; }
+    .time { color:#6b7280; font-size:12px; margin-left:6px; }
+    .sys { color:#8aa0ff; font-size:14px; text-align:center; margin:6px 0; }
+    .hint { color:var(--muted); font-size: 13px; margin-top:10px; }
+    .emoji { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+    .emoji button { background:#1f2430; border:1px solid #2a3040; padding:6px 8px; font-size:18px; }
+    textarea { min-height: 54px; max-height: 160px; resize: none; line-height: 1.5; width:100%; }
+    .footer { margin-top: 10px; display:flex; gap:10px; align-items:flex-end; }
+
+    code { background:#0c0f16; border:1px solid #2a3040; padding:2px 4px; border-radius:6px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono"; }
+    pre { background:#0c0f16; border:1px solid #2a3040; padding:12px; border-radius:12px; overflow:hidden; position:relative; margin:8px 0; }
+    pre.collapsed { max-height: 140px; }
+    pre .code-wrap { max-height: 140px; overflow:hidden; }
+    pre.expanded .code-wrap { max-height:none; }
+    pre .code-wrap code { display:block; white-space:pre-wrap; word-break:break-word; }
+    .code-actions { display:flex; gap:6px; position:absolute; right:8px; top:8px; }
+    .copy, .expand { font-size:12px; background:#202534; color:#cbd5e1; border:1px solid #2b3142; padding:4px 6px; border-radius:6px; }
+
+    .replyBox { display:none; align-items:center; gap:10px; background:#10131a; border:1px solid #2a3040; border-radius:10px; padding:8px 10px; margin-top:8px; }
+    .replyBox .mini { font-weight:600; }
+    .replyBox .close { margin-left:auto; background:#1f2430; }
+
+    .imgMsg { max-width: 220px; border-radius:10px; border:1px solid var(--border); cursor:zoom-in; }
+    .member-list { margin-top:12px; border-top:1px dashed var(--border); padding-top:10px; }
+    .member { display:flex; align-items:center; gap:8px; font-size:14px; margin:6px 0; }
+    .member .dot { width:8px; height:8px; border-radius:50%; }
+
+    .modal { position:fixed; inset:0; background:rgba(0,0,0,.65); display:none; align-items:center; justify-content:center; z-index:999; }
+    .modal img { max-width:90vw; max-height:90vh; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+    @media (max-width: 600px) {
+      .wrap { padding: 12px; }
+      .layout { grid-template-columns: 1fr; }
+      .side { order:2; }
+      .card { order:1; }
+      .chat { height: 360px; }
+      .row input, .row select, .row button { flex: 1 1 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h2>临时云聊天室</h2>
+    <div class="layout">
+      <div class="card">
+        <div class="row">
+          <input id="name" placeholder="你的昵称" />
+          <input id="room" placeholder="房间号（随便填一个）" />
+          <input id="duration" placeholder="时长(小时, 1-72)" />
+          <div class="color-wrap">
+            <button id="colorToggle" class="uploadBtn">昵称颜色</button>
+            <span class="color-tip">(对外展示颜色)</span>
+          </div>
+          <div id="colorPicker" class="color-picker"></div>
+          <input id="color" type="hidden" value="#2f80ed" />
+          <button id="join">进入房间</button>
+        </div>
+        <div class="hint">分享链接：<span id="share">—</span> <button id="copy">复制</button></div>
+        <div class="hint" id="roomHint">提示：房间是临时的，不存数据库，重启服务后会清空。</div>
+
+        <div id="chat" class="chat"></div>
+
+        <div class="emoji" id="emojiBar"></div>
+
+        <div class="replyBox" id="replyBox">
+          <div>回复 <span class="mini" id="replyName"></span>：</div>
+          <div id="replyText" style="color:#cbd5e1; font-size:13px;"></div>
+          <button class="close" id="replyClose">取消</button>
+        </div>
+
+        <div class="footer">
+          <textarea id="text" placeholder="输入消息..." style="flex:1;"></textarea>
+          <input id="file" type="file" accept="image/*" style="display:none" />
+          <button id="upload" class="uploadBtn">图片</button>
+          <button id="send">发送</button>
+        </div>
+      </div>
+
+      <aside class="side" id="side">
+        <div class="row" style="justify-content:space-between;">
+          <h3>工具箱</h3>
+        </div>
+        <a class="tool-link" href="https://image.dooo.ng/" target="_blank">图床 / 图片外链</a>
+        <a class="tool-link" href="https://www.sodatool.com/tool/file-transfer" target="_blank">临时文件箱 (Sodatool)</a>
+        <a class="tool-link" href="https://lingdaima.com/file/" target="_blank">临时文件箱 (灵代码)</a>
+        <a class="tool-link" href="https://webnote.cc/" target="_blank">云剪贴板</a>
+        <small>提示：工具箱不会占用你的服务器资源。</small>
+
+        <div class="member-list" id="memberList">
+          <h3>成员</h3>
+          <div id="members"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div id="modal" class="modal"><img id="modalImg" src="" alt="preview" /></div>
+
+<script>
+  const chat = document.getElementById('chat');
+  const nameInput = document.getElementById('name');
+  const roomInput = document.getElementById('room');
+  const durationInput = document.getElementById('duration');
+  const colorSelect = document.getElementById('color');
+  const colorPicker = document.getElementById('colorPicker');
+  const colorToggle = document.getElementById('colorToggle');
+  const textInput = document.getElementById('text');
+  const joinBtn = document.getElementById('join');
+  const sendBtn = document.getElementById('send');
+  const share = document.getElementById('share');
+  const copyBtn = document.getElementById('copy');
+  const emojiBar = document.getElementById('emojiBar');
+  const roomHint = document.getElementById('roomHint');
+  const replyBox = document.getElementById('replyBox');
+  const replyName = document.getElementById('replyName');
+  const replyText = document.getElementById('replyText');
+  const replyClose = document.getElementById('replyClose');
+  const fileInput = document.getElementById('file');
+  const uploadBtn = document.getElementById('upload');
+  const modal = document.getElementById('modal');
+  const modalImg = document.getElementById('modalImg');
+  const membersEl = document.getElementById('members');
+
+  let ws;
+  let currentName = '匿名';
+  let currentRoom = 'lobby';
+  let currentColor = '#2f80ed';
+  let replyTo = null;
+  let roomPassword = '';
+
+  const colorPalette = ['#2f80ed','#6c5ce7','#00b894','#e17055','#0984e3','#d63031','#fdcb6e','#00cec9','#636e72','#e84393'];
+  colorPalette.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'color-dot' + (c === '#2f80ed' ? ' active' : '');
+    btn.style.background = c;
+    btn.title = c;
+    btn.onclick = () => {
+      currentColor = c;
+      colorSelect.value = c;
+      document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+      btn.classList.add('active');
+    };
+    colorPicker.appendChild(btn);
+  });
+  colorToggle.onclick = () => colorPicker.classList.toggle('open');
+
+  const emojis = ['😀','😂','🥲','😍','🤔','😭','😡','👍','🙏','🎉','🔥','💡','💬','💯'];
+  emojis.forEach(e => { const b = document.createElement('button'); b.textContent = e; b.onclick = () => { textInput.value += e; autoGrow(); textInput.focus(); }; emojiBar.appendChild(b); });
+
+  function escapeHtml(s){ return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function renderMarkdown(s){
+    let t = escapeHtml(s);
+    const blocks = [];
+    t = t.replace(/```([\s\S]*?)```/g, (m, code) => { const id = blocks.length; blocks.push(code); return `@@CODE${id}@@`; });
+    t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+    t = t.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    t = t.replace(/\*([^*]+)\*\*/g, '<em>$1</em>');
+    t = t.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+    t = t.replace(/\n/g, '<br/>');
+    t = t.replace(/@@CODE(\d+)@@/g, (m, id) => {
+      const safe = escapeHtml(blocks[Number(id)]?.trim() || '');
+      return `<pre class="collapsed"><div class="code-actions"><button class="copy" onclick="copyBlock(this)">复制</button><button class="expand" onclick="toggleCode(this)">展开</button></div><div class="code-wrap"><code>${safe}</code></div></pre>`;
+    });
+    return t;
+  }
+
+  function addSystem(text, ts) {
+    const div = document.createElement('div');
+    div.className = 'sys';
+    div.innerHTML = `🔔 ${text} <span class="time">${new Date(ts).toLocaleTimeString()}</span>`;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function addChat(msg) {
+    const row = document.createElement('div');
+    row.className = 'msgRow ' + (msg.name === currentName ? 'me' : 'other');
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    const replyHtml = msg.replyTo ? `<div class="reply">回复 ${escapeHtml(msg.replyTo.name)}：${escapeHtml(msg.replyTo.text)}</div>` : '';
+    const badge = `<span class="name-badge" style="background:${msg.color || '#2f80ed'}"></span>`;
+    if (msg.name !== currentName) {
+      bubble.innerHTML = `${replyHtml}<span class="name">${badge}${escapeHtml(msg.name)}</span>${renderMarkdown(msg.text)} <span class="time">${new Date(msg.ts).toLocaleTimeString()}</span>`;
+    } else {
+      bubble.innerHTML = `${replyHtml}${renderMarkdown(msg.text)} <span class="time">${new Date(msg.ts).toLocaleTimeString()}</span>`;
+    }
+    row.appendChild(bubble);
+    chat.appendChild(row);
+    chat.scrollTop = chat.scrollHeight;
+
+    row.ondblclick = () => setReply(msg.name, msg.text);
+    let startX = 0;
+    row.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; });
+    row.addEventListener('touchend', (e) => { const endX = e.changedTouches[0].clientX; if (startX - endX > 60) setReply(msg.name, msg.text); });
+  }
+
+  function addImage(msg){
+    const row = document.createElement('div');
+    row.className = 'msgRow ' + (msg.name === currentName ? 'me' : 'other');
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    const img = `<img class="imgMsg" src="${msg.url}" alt="${escapeHtml(msg.original||'image')}" data-src="${msg.url}" />`;
+    const badge = `<span class="name-badge" style="background:${msg.color || '#2f80ed'}"></span>`;
+    if (msg.name !== currentName) {
+      bubble.innerHTML = `<span class="name">${badge}${escapeHtml(msg.name)}</span>${img}<div style="margin-top:6px;"><a href="${msg.url}" target="_blank" download>查看原图</a></div>`;
+    } else {
+      bubble.innerHTML = `${img}<div style="margin-top:6px;"><a href="${msg.url}" target="_blank" download>查看原图</a></div>`;
+    }
+    row.appendChild(bubble);
+    chat.appendChild(row);
+    chat.scrollTop = chat.scrollHeight;
+    const imgEl = row.querySelector('img');
+    if (imgEl) imgEl.onclick = () => { modalImg.src = imgEl.dataset.src; modal.style.display = 'flex'; };
+  }
+
+  function setReply(name, text){
+    replyTo = { name, text };
+    replyName.textContent = name;
+    replyText.textContent = text.length > 80 ? text.slice(0,80) + '…' : text;
+    replyBox.style.display = 'flex';
+  }
+
+  replyClose.onclick = () => { replyTo = null; replyBox.style.display = 'none'; };
+  modal.onclick = () => { modal.style.display = 'none'; modalImg.src=''; };
+
+  function updateShareLink() { share.textContent = `${location.origin}/?room=${encodeURIComponent(currentRoom)}`; }
+
+  function getDeviceId(){
+    let id = localStorage.getItem('device_id');
+    if (!id) {
+      id = 'd_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem('device_id', id);
+    }
+    return id;
+  }
+
+  function connect() {
+    currentName = nameInput.value.trim() || '匿名';
+    currentRoom = roomInput.value.trim() || 'lobby';
+    currentColor = colorSelect.value || '#2f80ed';
+    const pass = roomPassword || '';
+    const durationHours = durationInput.value.trim();
+
+    const deviceId = getDeviceId();
+    const wsUrl = (location.protocol === 'https:' ? 'wss' : 'ws') + '://' + location.host + '/?room=' + encodeURIComponent(currentRoom) + '&name=' + encodeURIComponent(currentName) + '&pass=' + encodeURIComponent(pass) + '&durationHours=' + encodeURIComponent(durationHours) + '&color=' + encodeURIComponent(currentColor) + '&device=' + encodeURIComponent(deviceId);
+    ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => { addSystem(`已进入房间：${currentRoom}`, Date.now()); updateShareLink(); };
+
+    ws.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      if (data.type === 'system') addSystem(data.text, data.ts);
+      if (data.type === 'admin_help') addSystem(data.text, data.ts);
+      if (data.type === 'chat') addChat(data);
+      if (data.type === 'image') addImage(data);
+      if (data.type === 'members') {
+        membersEl.innerHTML = '';
+        data.members.forEach(m => {
+          const div = document.createElement('div');
+          div.className = 'member';
+          div.innerHTML = `<span class="dot" style="background:${m.color}"></span>${escapeHtml(m.name)}`;
+          membersEl.appendChild(div);
+        });
+      }
+      if (data.type === 'set_pass') {
+        const p = prompt('设置房间密码（可留空表示不加密）');
+        roomPassword = (p || '').trim();
+        if (roomPassword) ws.send(JSON.stringify({ type:'chat', text: `/pass ${roomPassword}` }));
+        else ws.send(JSON.stringify({ type:'chat', text: `/pass` }));
+      }
+      if (data.type === 'clear') chat.innerHTML = '';
+      if (data.type === 'room_info' && data.expiresAt) { const left = Math.max(0, data.expiresAt - Date.now()); roomHint.textContent = `本房间将于 ${new Date(data.expiresAt).toLocaleString()} 过期（约 ${Math.ceil(left/60000)} 分钟）`; }
+      if (data.type === 'kicked') addSystem(data.text, data.ts);
+      if (data.type === 'error') {
+        if (data.code === 'wrong_password') {
+          const p = prompt('房间有密码，请输入：');
+          roomPassword = (p || '').trim();
+          if (roomPassword) { if (ws) ws.close(); connect(); }
+          return;
+        }
+        addSystem(data.message || '错误', data.ts);
+      }
+    };
+
+    ws.onclose = () => addSystem('连接已断开', Date.now());
+  }
+
+  joinBtn.onclick = () => {
+    if (!currentRoom || currentRoom !== roomInput.value.trim()) roomPassword = '';
+    connect();
+  };
+  sendBtn.onclick = () => {
+    if (!ws || ws.readyState !== 1) return;
+    const val = textInput.value;
+    if (!val.trim()) return;
+    ws.send(JSON.stringify({ type: 'chat', text: val, replyTo }));
+    textInput.value = '';
+    autoGrow();
+    replyTo = null;
+    replyBox.style.display = 'none';
+  };
+
+  textInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (!isMobile && !e.shiftKey) {
+        e.preventDefault();
+        sendBtn.click();
+      }
+    }
+  });
+  textInput.addEventListener('input', () => autoGrow());
+  function autoGrow(){ textInput.style.height = 'auto'; textInput.style.height = Math.min(textInput.scrollHeight, 160) + 'px'; }
+  autoGrow();
+
+  copyBtn.onclick = async () => { if (!share.textContent || share.textContent === '—') return; try { await navigator.clipboard.writeText(share.textContent); addSystem('链接已复制', Date.now()); } catch(e) {} };
+
+  uploadBtn.onclick = () => fileInput.click();
+  fileInput.onchange = async () => { if (!fileInput.files || !fileInput.files[0]) return; await uploadImage(fileInput.files[0]); fileInput.value = ''; };
+  textInput.addEventListener('paste', async (e) => {
+    const items = e.clipboardData?.items || [];
+    for (const it of items) { if (it.type.startsWith('image/')) { const file = it.getAsFile(); if (file) await uploadImage(file); } }
+  });
+  document.addEventListener('dragover', (e) => e.preventDefault());
+  document.addEventListener('drop', async (e) => { e.preventDefault(); const files = e.dataTransfer?.files || []; if (files.length) await uploadImage(files[0]); });
+
+  async function uploadImage(file){
+    const form = new FormData();
+    form.append('file', file);
+    const qs = `room=${encodeURIComponent(currentRoom)}&name=${encodeURIComponent(currentName)}&color=${encodeURIComponent(currentColor)}`;
+    const res = await fetch(`/upload?${qs}`, { method:'POST', body: form });
+    if (!res.ok) addSystem('图片上传失败', Date.now());
+  }
+
+  window.copyBlock = (btn) => {
+    const code = btn.closest('pre')?.querySelector('code')?.innerText || '';
+    if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(code); }
+    else { const ta = document.createElement('textarea'); ta.value = code; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch(e) {} ta.remove(); }
+    btn.textContent = '已复制'; setTimeout(() => btn.textContent = '复制', 1200);
+  };
+  window.toggleCode = (btn) => {
+    const pre = btn.closest('pre'); if (!pre) return; const expanded = pre.classList.toggle('expanded'); pre.classList.toggle('collapsed', !expanded); btn.textContent = expanded ? '收起' : '展开';
+  };
+</script>
+</body>
+</html>
