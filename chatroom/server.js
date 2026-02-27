@@ -88,9 +88,15 @@ app.post('/upload', (req, res, next) => {
       const mime = req.file.mimetype || '';
 
       // Broadcast to room
-      const isImage = /^image\//i.test(mime);
+      let msgType = 'file';
+      if (/^image\//i.test(mime)) {
+        msgType = 'image';
+      } else if (/^video\//i.test(mime)) {
+        msgType = 'video';
+      }
+      
       roomManager.broadcast(roomId, {
-        type: isImage ? 'image' : 'file',
+        type: msgType,
         name,
         color,
         url: fileUrl,
