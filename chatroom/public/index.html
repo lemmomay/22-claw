@@ -454,6 +454,7 @@ input:focus, textarea:focus {
     div.innerHTML = `🔔 ${text} <span class="time">${new Date(ts).toLocaleTimeString()}</span>`;
     chat.appendChild(div);
     chat.scrollTop = chat.scrollHeight;
+    return div;
   }
 
   function addChat(msg) {
@@ -716,26 +717,61 @@ input:focus, textarea:focus {
   document.addEventListener('dragover', (e) => e.preventDefault());
   document.addEventListener('drop', async (e) => { e.preventDefault(); const files = e.dataTransfer?.files || []; if (files.length) await uploadImage(files[0]); });
 
-  async function uploadImage(file){
+  function uploadImage(file){
     const maxSize = 200 * 1024 * 1024; // 200MB
     if (file.size > maxSize) {
       addSystem('文件太大，最大 200MB', Date.now());
       return;
     }
     
-    addSystem('正在上传...', Date.now());
+    const uploadMsg = addSystem('正在上传... 0%', Date.now());
+    
     const form = new FormData();
     form.append('file', file);
     const qs = `room=${encodeURIComponent(currentRoom)}&name=${encodeURIComponent(currentName)}&color=${encodeURIComponent(currentColor)}`;
-    try {
-      const res = await fetch(`/upload?${qs}`, { method:'POST', body: form });
-      const data = await res.json();
-      if (!res.ok) {
-        addSystem(`上传失败: ${data.error || '未知错误'}`, Date.now());
+    
+    const xhr = new XMLHttpRequest();
+    
+    // 上传进度
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        if (uploadMsg && uploadMsg.textContent) {
+          uploadMsg.textContent = `🔔 正在上传... ${percent}%`;
+        }
       }
-    } catch (e) {
+    });
+    
+    // 完成
+    xhr.addEventListener('load', () => {
+      if (uploadMsg) uploadMsg.remove();
+      if (xhr.status === 200) {
+        // 上传成功，服务器会广播消息
+      } else {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          addSystem(`上传失败: ${data.error || '未知错误'}`, Date.now());
+        } catch (e) {
+          addSystem('上传失败', Date.now());
+        }
+      }
+    });
+    
+    // 错误
+    xhr.addEventListener('error', () => {
+      if (uploadMsg) uploadMsg.remove();
       addSystem('上传失败', Date.now());
-    }
+    });
+    
+    // 超时
+    xhr.addEventListener('timeout', () => {
+      if (uploadMsg) uploadMsg.remove();
+      addSystem('上传超时', Date.now());
+    });
+    
+    xhr.timeout = 120000; // 2分钟超时
+    xhr.open('POST', `/upload?${qs}`);
+    xhr.send(form);
   }
 
   window.copyBlock = (btn) => {

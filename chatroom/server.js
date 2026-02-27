@@ -12,7 +12,17 @@ const ConnectionHandler = require('./src/ConnectionHandler');
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+
+// 增加并发连接数限制
+server.maxConnections = 0; // 0 表示无限制
+server.timeout = 120000; // 2分钟超时（上传大文件需要）
+
+const wss = new WebSocket.Server({ 
+  server,
+  // WebSocket 配置
+  perMessageDeflate: false, // 禁用压缩以减少 CPU 占用
+  maxPayload: 100 * 1024 * 1024 // 100MB WebSocket 消息限制
+});
 
 // Setup uploads directory
 const uploadsDir = path.join(__dirname, 'public', 'uploads');
@@ -168,9 +178,13 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Configure HTTP Keep-Alive for better connection reuse
+server.keepAliveTimeout = 65000; // 65 seconds
+server.headersTimeout = 66000; // Slightly more than keepAliveTimeout
+
 // Start server
 server.listen(config.PORT, () => {
-  console.log(`✨ Chatroom v2 running on port ${config.PORT}`);
+  console.log(`✨ Chatroom running on port ${config.PORT}`);
   console.log(`📊 Health check: http://localhost:${config.PORT}/health`);
 });
 
