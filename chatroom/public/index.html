@@ -665,7 +665,7 @@ input:focus, textarea:focus {
     
     // 视频缩略图 + 点击弹窗
     const videoHtml = `
-      <div class="video-msg" onclick="openVideoModal('${msg.url}', '${escapeHtml(msg.original)}', '${msg.mime}')">
+      <div class="video-msg" data-url="${msg.url}" data-name="${escapeHtml(msg.original)}" data-mime="${msg.mime}">
         <div class="video-thumb">
           <video class="video-preview" preload="metadata" muted>
             <source src="${msg.url}#t=0.1" type="${msg.mime}">
@@ -690,6 +690,16 @@ input:focus, textarea:focus {
     row.appendChild(bubble);
     chat.appendChild(row);
     chat.scrollTop = chat.scrollHeight;
+    
+    // 添加视频点击事件
+    const videoMsg = row.querySelector('.video-msg');
+    if (videoMsg) {
+      videoMsg.addEventListener('click', (e) => {
+        if (!e.target.closest('.video-download')) {
+          openVideoModal(msg.url, msg.original, msg.mime);
+        }
+      });
+    }
   }
 
   function getFileIcon(mime, filename) {
