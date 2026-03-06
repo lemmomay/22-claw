@@ -32,22 +32,14 @@ function uniq(list) {
 
 function candidateModelPaths(provider, baseUrl = '') {
   const hasV1 = baseHasV1(baseUrl);
-  if (provider === 'anthropic') {
-    return uniq(hasV1 ? ['/models'] : ['/v1/models', '/models']);
-  }
+  if (provider === 'anthropic') return uniq(hasV1 ? ['/models'] : ['/v1/models', '/models']);
   return uniq(hasV1 ? ['/models'] : ['/v1/models', '/models']);
 }
 
 function candidateChatPaths(provider, baseUrl = '') {
   const hasV1 = baseHasV1(baseUrl);
-  if (provider === 'anthropic') {
-    return uniq(hasV1 ? ['/messages'] : ['/v1/messages', '/messages']);
-  }
-  return uniq(
-    hasV1
-      ? ['/chat/completions', '/responses']
-      : ['/v1/chat/completions', '/chat/completions', '/v1/responses', '/responses']
-  );
+  if (provider === 'anthropic') return uniq(hasV1 ? ['/messages'] : ['/v1/messages', '/messages']);
+  return uniq(hasV1 ? ['/chat/completions', '/responses'] : ['/v1/chat/completions', '/chat/completions', '/v1/responses', '/responses']);
 }
 
 function candidateConnectivityPaths(provider, baseUrl = '') {
@@ -55,36 +47,24 @@ function candidateConnectivityPaths(provider, baseUrl = '') {
 }
 
 function buildHeaders({ provider, apiKey }) {
-  const headers = {
-    accept: 'application/json',
-  };
+  const headers = { accept: 'application/json' };
   if (apiKey) headers.authorization = `Bearer ${apiKey}`;
   if (provider === 'anthropic') headers['anthropic-version'] = '2023-06-01';
   return headers;
 }
 
 function buildJsonHeaders({ provider, apiKey }) {
-  return {
-    ...buildHeaders({ provider, apiKey }),
-    'content-type': 'application/json',
-  };
+  return { ...buildHeaders({ provider, apiKey }), 'content-type': 'application/json' };
 }
 
 function extractModels(_provider, payload) {
-  const data = Array.isArray(payload?.data)
-    ? payload.data
-    : Array.isArray(payload?.models)
-      ? payload.models
-      : [];
-
-  return data
-    .map((item) => {
-      if (typeof item === 'string') return item;
-      if (item && typeof item.id === 'string') return item.id;
-      if (item && typeof item.name === 'string') return item.name;
-      return null;
-    })
-    .filter(Boolean);
+  const data = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload?.models) ? payload.models : [];
+  return data.map((item) => {
+    if (typeof item === 'string') return item;
+    if (item && typeof item.id === 'string') return item.id;
+    if (item && typeof item.name === 'string') return item.name;
+    return null;
+  }).filter(Boolean);
 }
 
 function isResponsesPath(path = '') {
@@ -94,26 +74,12 @@ function isResponsesPath(path = '') {
 function buildChatBody({ provider, model, message, path }) {
   const text = String(message || '').trim() || 'Hello';
   if (provider === 'anthropic') {
-    return {
-      model,
-      max_tokens: 512,
-      messages: [{ role: 'user', content: text }],
-    };
+    return { model, max_tokens: 512, messages: [{ role: 'user', content: text }] };
   }
-
   if (isResponsesPath(path)) {
-    return {
-      model,
-      input: text,
-      max_output_tokens: 512,
-    };
+    return { model, input: text, max_output_tokens: 512 };
   }
-
-  return {
-    model,
-    messages: [{ role: 'user', content: text }],
-    max_tokens: 512,
-  };
+  return { model, messages: [{ role: 'user', content: text }], max_tokens: 512 };
 }
 
 function extractChatText(provider, payload) {
@@ -122,15 +88,11 @@ function extractChatText(provider, payload) {
     const textBlock = content.find((item) => item && item.type === 'text' && typeof item.text === 'string');
     return textBlock?.text || JSON.stringify(payload);
   }
-
   if (typeof payload?.output_text === 'string' && payload.output_text) return payload.output_text;
-
   const msg = payload?.choices?.[0]?.message?.content;
   if (typeof msg === 'string') return msg;
-
   const outputText = payload?.output?.flatMap?.((item) => item?.content || [])?.find?.((x) => x?.type === 'output_text' && typeof x?.text === 'string');
   if (outputText?.text) return outputText.text;
-
   return JSON.stringify(payload);
 }
 

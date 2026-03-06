@@ -1,65 +1,94 @@
 # api-test-site
 
-临时 API 测试站：
+一个轻量、临时、无持久化的 API 测试站。
 
-- 输入 `baseUrl` 和可选 `apiKey`
-- 如果没有 key：只做基础连通性测试
-- 如果有 key：自动尝试获取模型列表，并允许选择模型做一次简单聊天测试
-- 支持模式：`auto` / `openai` / `anthropic`
-- 支持手动指定路径覆盖自动探测
-- 支持 OpenAI `/chat/completions`、`/responses`，以及 Anthropic `/messages`
-- 不做任何持久化存储，刷新页面即丢失状态（主题仅保留在当前 sessionStorage）
+适合用来测试：
+- OpenAI 兼容接口
+- OpenAI `/chat/completions`
+- OpenAI `/responses`
+- Anthropic `/messages`
 
-## 本地启动
+## 项目目标
+
+- 前端尽量简单
+- 后端尽量轻：**Node 原生 http，无 Express 依赖**
+- 不做数据库、不做本地持久化
+- Workers 版本支持**直接复制代码到 Cloudflare Dashboard** 后部署
+
+---
+
+## 当前版本
+
+### 1. Node 原生版
+
+特点：
+- 只依赖 Node 本身
+- 无 Express
+- 适合 VPS / systemd / OpenRC / Docker
+
+启动：
 
 ```bash
-npm install
-PORT=28882 npm start
+node server.js
 ```
 
-打开：`http://127.0.0.1:28882`
-
-## 常用路径
-
-- OpenAI 风格：`/models` + `/chat/completions` 或 `/responses`
-- Anthropic 风格：`/models` + `/messages`
-
-## 部署版本
-
-- Node / systemd：适合普通 Ubuntu / Debian VPS
-- Docker：见 `DOCKER.md`
-- Cloudflare Workers：见 `workers/README.md`
-- OpenRC：见 `openrc/`
-
-## OpenRC 部署
-
-适合 Alpine、Void（兼容场景）或使用 OpenRC 的机器。
-
-### 1. 放置项目
+或：
 
 ```bash
-mkdir -p /opt/api-test-site
-cp -r ./* /opt/api-test-site/
-cd /opt/api-test-site
-npm install --omit=dev
+PORT=28884 node server.js
 ```
 
-### 2. 安装服务脚本
+---
 
-```bash
-cp openrc/api-test-site /etc/init.d/api-test-site
-chmod +x /etc/init.d/api-test-site
-```
+### 2. Docker 版
 
-### 3. 启动并设为开机自启
+见：`DOCKER.md`
 
-```bash
-rc-service api-test-site start
-rc-update add api-test-site default
-```
+---
 
-### 4. 自定义端口（可选）
+### 3. Cloudflare Workers 版
 
-```bash
-API_TEST_PORT=28884 rc-service api-test-site restart
+见：`workers/README.md`
+
+---
+
+### 4. OpenRC 版
+
+见：`openrc/`
+
+---
+
+## 支持的能力
+
+- 输入 `baseUrl`
+- 可选 `apiKey`
+- 无 key 时做连通性测试
+- 有 key 时自动拉模型
+- 选模型后发一条聊天测试
+- 支持手动覆盖路径
+- 前端刷新即丢，不做存储
+
+## 路径探测
+
+### OpenAI 风格
+- `/models`
+- `/chat/completions`
+- `/responses`
+
+### Anthropic 风格
+- `/models`
+- `/messages`
+
+## 目录结构
+
+```text
+api-test-site/
+├── public/               # 前端
+├── lib/provider.js       # 路径与请求体逻辑
+├── server.js             # Node 原生 http 服务
+├── workers/              # Workers 版本
+├── openrc/               # OpenRC 启动脚本
+├── Dockerfile
+├── docker-compose.yml
+└── test/
 ```
