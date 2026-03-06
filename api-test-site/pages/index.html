@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>API 测试站 · Pages 版</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-theme="light">
+    <div class="page">
+      <header class="topbar">
+        <div>
+          <div class="brand">🌸 API 测试站 · Pages 版</div>
+          <div class="subtitle">纯前端直连 · 刷新即丢 · 不做本地持久化</div>
+        </div>
+        <div class="topbar-actions">
+          <button id="fillDemoBtn" class="ghost-btn" type="button">填入示例</button>
+          <button id="themeToggle" class="theme-btn" type="button">🌙 切换暗色</button>
+          <button id="clearBtn" class="ghost-btn" type="button">清空当前页</button>
+        </div>
+      </header>
+
+      <section class="hero-grid">
+        <div class="hero-card hero-main">
+          <div class="hero-title">轻量 Pages 版</div>
+          <div class="hero-text">适合支持浏览器直连的 API。直接在浏览器里探测模型、发起聊天测试，不经过你自己的后端。</div>
+        </div>
+        <div class="hero-card stat-card">
+          <div class="stat-label">运行方式</div>
+          <div class="stat-value">Static Pages</div>
+        </div>
+        <div class="hero-card stat-card">
+          <div class="stat-label">状态模型</div>
+          <div class="stat-value">临时内存态</div>
+        </div>
+        <div class="hero-card stat-card">
+          <div class="stat-label">注意事项</div>
+          <div class="stat-value">受 CORS 限制</div>
+        </div>
+      </section>
+
+      <main class="layout">
+        <section class="left-column">
+          <div class="card form-card">
+            <div class="section-head">
+              <div>
+                <div class="section-title">连接设置</div>
+                <div class="section-desc">先填 Base URL / API Key，再探测模型。</div>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label>Base URL
+                <input id="baseUrl" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="例如 https://api.openai.com/v1" />
+              </label>
+            </div>
+
+            <div class="row2 compact-gap">
+              <label>API 模式
+                <select id="mode">
+                  <option value="auto">自动识别</option>
+                  <option value="openai">OpenAI 兼容</option>
+                  <option value="anthropic">Anthropic Messages</option>
+                </select>
+              </label>
+              <label>手动路径（可选）
+                <input id="manualPath" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="例如 /v1/models 或 /messages" />
+              </label>
+            </div>
+
+            <label>API Key（可选）
+              <input id="apiKey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="留空则仅做连通性测试" />
+            </label>
+
+            <div class="row2 compact-gap">
+              <label>自动获取的模型
+                <select id="modelSelect"></select>
+              </label>
+              <label>手动模型名（兜底）
+                <input id="manualModel" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="拉不到模型时再手填" />
+              </label>
+            </div>
+
+            <div class="actions stacked-mobile">
+              <button id="probeBtn" type="button">探测 / 获取模型</button>
+              <button id="chatBtn" class="secondary" type="button">发送聊天测试</button>
+            </div>
+
+            <div class="tips">
+              <span class="pill">OpenAI /models</span>
+              <span class="pill">OpenAI /responses</span>
+              <span class="pill">Chat Completions</span>
+              <span class="pill">Anthropic /messages</span>
+            </div>
+          </div>
+
+          <div class="card status-card">
+            <div class="section-head tight">
+              <div>
+                <div class="section-title">状态</div>
+                <div class="section-desc">成功、失败和当前建议会显示在这里。</div>
+              </div>
+            </div>
+            <div class="status-panel">
+              <div id="statusBar" class="status-bar">等待测试…</div>
+              <div id="statusHint" class="status-hint">先探测模型；若失败，可能是 CORS、Key、路径或接口格式问题。</div>
+            </div>
+          </div>
+
+          <div class="card notes-card">
+            <div class="section-head tight">
+              <div>
+                <div class="section-title">说明</div>
+                <div class="section-desc">这版很轻，但浏览器天然会更挑环境。</div>
+              </div>
+            </div>
+            <ul class="notes">
+              <li>这个 Pages 版由浏览器直接请求目标 API，不经过你的服务端。</li>
+              <li>如果接口不支持浏览器跨域访问（CORS），这里会失败，但不代表接口本身一定坏了。</li>
+              <li>页面不会写 localStorage / sessionStorage / IndexedDB；刷新后当前输入和结果都会丢失。</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="right-column">
+          <section class="card chat-card">
+            <div class="chat-head">
+              <div>
+                <div class="section-title">聊天测试</div>
+                <div class="chat-subtitle">像一个轻量临时聊天站一样测试接口；桌面端 Enter 发送，Shift+Enter 换行。</div>
+              </div>
+            </div>
+
+            <div id="chatTimeline" class="chat-timeline">
+              <div class="chat-empty">先探测模型，再在这里发一条消息试试。</div>
+            </div>
+
+            <div class="chat-composer card-inner">
+              <textarea id="message" rows="4" autocomplete="off" placeholder="输入消息…"></textarea>
+              <div class="composer-actions">
+                <div class="composer-tip" id="composerTip">桌面端 Enter 发送，Shift+Enter 换行</div>
+                <button id="chatBtnBottom" type="button">发送</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="card info-card wide-info">
+            <div class="result-head">
+              <div>
+                <div class="section-title">INFO</div>
+                <div class="info-subtitle">这里放调试信息、路径尝试、接口原始返回，方便排查。</div>
+              </div>
+            </div>
+            <pre id="result">等待测试…</pre>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
