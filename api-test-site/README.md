@@ -10,7 +10,7 @@
 - 支持 OpenAI `/chat/completions`、`/responses`，以及 Anthropic `/messages`
 - 不做任何持久化存储，刷新页面即丢失状态（主题仅保留在当前 sessionStorage）
 
-## 启动
+## 本地启动
 
 ```bash
 npm install
@@ -26,6 +26,40 @@ PORT=28882 npm start
 
 ## 部署版本
 
-- Node / systemd：当前 VPS 在跑的版本
+- Node / systemd：适合普通 Ubuntu / Debian VPS
 - Docker：见 `DOCKER.md`
 - Cloudflare Workers：见 `workers/README.md`
+- OpenRC：见 `openrc/`
+
+## OpenRC 部署
+
+适合 Alpine、Void（兼容场景）或使用 OpenRC 的机器。
+
+### 1. 放置项目
+
+```bash
+mkdir -p /opt/api-test-site
+cp -r ./* /opt/api-test-site/
+cd /opt/api-test-site
+npm install --omit=dev
+```
+
+### 2. 安装服务脚本
+
+```bash
+cp openrc/api-test-site /etc/init.d/api-test-site
+chmod +x /etc/init.d/api-test-site
+```
+
+### 3. 启动并设为开机自启
+
+```bash
+rc-service api-test-site start
+rc-update add api-test-site default
+```
+
+### 4. 自定义端口（可选）
+
+```bash
+API_TEST_PORT=28884 rc-service api-test-site restart
+```
