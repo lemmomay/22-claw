@@ -1,0 +1,10 @@
+version: '3.9'
+services:
+  api-test-site:
+    build: .
+    container_name: api-test-site
+    ports:
+      - "28884:28884"
+    environment:
+      PORT: 28884
+    restart: unless-stopped
