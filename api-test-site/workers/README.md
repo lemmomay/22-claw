@@ -1,47 +1,62 @@
 # Cloudflare Workers 版本
 
-这版我重新整理成两种模式，其中 **模式 0** 是你说的那种最简单方案：
+现在这个目录支持两种最实用的部署方式。
 
-## 模式 0：直接复制代码到 Cloudflare Workers 后台，然后部署
+## 方式 1：Cloudflare Dashboard 单文件直接部署（最简单）
 
-这是最适合“不需要存储、只想快速上线”的方式。
+如果你只是想：
+- 不要存储
+- 不折腾 wrangler
+- 直接在 Cloudflare 后台粘贴代码后部署
+
+那就直接用这个文件：
+
+- `dashboard-single-file.js`
 
 ### 步骤
 
 1. 打开 Cloudflare Dashboard
 2. 进入 **Workers & Pages**
 3. 创建一个新的 Worker
-4. 把 `workers/src/index.js` 的内容**整段复制进去**
-5. 点击部署
+4. 删除默认代码
+5. 把 `dashboard-single-file.js` 的完整内容粘进去
+6. 点击 **Deploy**
 
-如果你只需要 API 代理逻辑，这样就已经可以直接跑起来了。
+完成后就能直接访问。
 
-### 但要注意
+### 这个单文件版本包含
 
-这个模式默认只适合：
-- 你自己再配一个独立前端
-- 或者你只先测试 `/api/probe`、`/api/chat`
+- 前端页面
+- `/api/probe`
+- `/api/chat`
+- 路径探测逻辑
+- OpenAI / Anthropic 兼容处理
 
-因为当前这个项目的完整 UI 还在 `workers/public/` 里，不是单文件 HTML 内联。
+也就是说，**一份文件就是完整可用版本**。
+
+### 适合场景
+
+- 临时测试
+- 自己用
+- 不想维护本地项目结构
+- 想最快上线
 
 ---
 
-## 模式 A：完整 Workers 项目（推荐）
+## 方式 2：标准 Workers 项目（适合继续维护）
 
-这个模式包含：
-- 前端静态资源
-- `/api/probe`
-- `/api/chat`
+这个模式适合：
+- 你还要继续改 UI
+- 你想保留 `public/` 静态资源目录
+- 你想用 `wrangler dev` / `wrangler deploy`
 
-也就是当前仓库里的标准 Workers 版本。
-
-### 文件
+### 文件结构
 
 - `wrangler.toml`
 - `src/index.js`
 - `public/`
 
-### 手动部署
+### 部署步骤
 
 ```bash
 npm install -g wrangler
@@ -58,44 +73,24 @@ wrangler dev
 
 ---
 
-## 模式 B：前端静态托管，Workers 只做 API
+## 怎么选
 
-如果你以后想把前端单独放：
-- GitHub Pages
-- Cloudflare Pages
-- 任何静态站
+### 推荐优先级
 
-那就可以只保留 Worker 的 `/api/*` 逻辑。
+#### 最省事：方式 1
+直接复制 `dashboard-single-file.js` 到 Cloudflare Dashboard。
 
-前端里把请求地址改成你的 Worker 域名即可，比如：
-
-```js
-https://your-worker.workers.dev/api/probe
-https://your-worker.workers.dev/api/chat
-```
+#### 最适合继续开发：方式 2
+保留标准 Workers 项目结构。
 
 ---
 
-## 我建议
+## 说明
 
-如果你要：
-- **最快上线** → 模式 0
-- **完整使用当前界面** → 模式 A
-- **以后还想继续换前端** → 模式 B
+这个项目本身不做数据库、不做文件存储、不保存会话，因此很适合 Workers。
 
----
+如果你未来想进一步极简化，甚至可以把仓库默认文档直接优先推荐：
+- Workers 单文件版
+- Node 原生零依赖版
 
-## 后续可继续优化
-
-下一步还可以再做一个：
-- **单文件 Workers Full 版**
-
-也就是把：
-- HTML
-- CSS
-- JS
-- Worker API
-
-全部塞进一个 `index.js`，这样就真的是“复制一份代码到 CF 后台直接 deploy”。
-
-目前仓库里还没把 UI 内联成单文件，但如果你要，我下一轮可以专门继续收敛成这个版本。
+把它们作为两个主入口，Docker / OpenRC 当作补充部署方式。
