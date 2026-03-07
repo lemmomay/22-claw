@@ -1,5 +1,3 @@
-const THEME_KEY = 'api-test-pages-theme';
-
 function $(id) {
   return document.getElementById(id);
 }
@@ -299,10 +297,10 @@ async function probe() {
   }
 }
 
-async function chat() {
+async function chat(messageOverride = null) {
   const { baseUrl, apiKey, mode, manualPath } = currentPayload();
   const model = selectedModel();
-  const message = $('message').value.trim();
+  const message = (messageOverride ?? $('message').value).trim();
 
   if (!baseUrl) {
     setStatus('请先填写 Base URL', 'bad', '没有 Base URL 无法测试。');
@@ -355,6 +353,14 @@ async function chat() {
   show({ ok: false, provider, model, attempts });
 }
 
+async function quickChat() {
+  const defaultMessage = '你好，介绍一下你自己。';
+  if (!$('message').value.trim()) {
+    $('message').value = defaultMessage;
+  }
+  await chat(defaultMessage);
+}
+
 function clearAll() {
   $('baseUrl').value = '';
   $('apiKey').value = '';
@@ -393,8 +399,8 @@ function bindComposerBehavior() {
 window.addEventListener('DOMContentLoaded', () => {
   loadTheme();
   $('probeBtn').addEventListener('click', probe);
-  $('chatBtn').addEventListener('click', chat);
-  $('chatBtnBottom').addEventListener('click', chat);
+  $('quickChatBtn').addEventListener('click', quickChat);
+  $('chatBtnBottom').addEventListener('click', () => chat());
   $('clearBtn').addEventListener('click', clearAll);
   $('fillDemoBtn').addEventListener('click', fillDemo);
   $('themeToggle').addEventListener('click', toggleTheme);
