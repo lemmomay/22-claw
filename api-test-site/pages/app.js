@@ -101,25 +101,18 @@ function extractChatText(provider, payload) {
 
 function applyTheme(theme) {
   document.body.dataset.theme = theme;
-  $('themeToggle').textContent = theme === 'dark' ? '☀️ 切换亮色' : '🌙 切换暗色';
+  $('themeToggle').textContent = theme === 'dark' ? '☀️' : '🌙';
+  $('themeToggle').title = theme === 'dark' ? '切换亮色' : '切换暗色';
 }
 
 function loadTheme() {
-  try {
-    const saved = sessionStorage.getItem(THEME_KEY) || 'light';
-    applyTheme(saved);
-  } catch {
-    applyTheme('light');
-  }
+  applyTheme('light');
 }
 
 function toggleTheme() {
   const current = document.body.dataset.theme === 'dark' ? 'dark' : 'light';
   const next = current === 'dark' ? 'light' : 'dark';
   applyTheme(next);
-  try {
-    sessionStorage.setItem(THEME_KEY, next);
-  } catch {}
 }
 
 function setStatus(text, kind = '', hint = '') {

@@ -59,7 +59,7 @@ body::before {
 .page {
   position: relative;
   z-index: 1;
-  max-width: 1320px;
+  max-width: 1280px;
   margin: 0 auto;
   padding: 24px;
 }
@@ -90,20 +90,6 @@ body::before {
   font-size: 14px;
 }
 
-.topbar-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.hero-grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 18px;
-}
-
-.hero-card,
 .card {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -113,43 +99,22 @@ body::before {
   backdrop-filter: blur(16px);
 }
 
-.hero-main {
-  padding: 22px 24px;
-}
-
-.hero-title {
-  font-size: 20px;
-  font-weight: 800;
-  margin-bottom: 8px;
-}
-
-.hero-text {
-  color: var(--muted);
-  line-height: 1.65;
-}
-
-.stat-card {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-height: 116px;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: var(--muted);
-  margin-bottom: 8px;
-}
-
-.stat-value {
-  font-size: 18px;
-  font-weight: 800;
-  line-height: 1.35;
-}
-
 .layout {
   display: grid;
-  grid-template-columns: 420px 1fr;
+  gap: 18px;
+}
+
+.single-column-layout {
+  grid-template-columns: 1fr;
+}
+
+.top-form-card {
+  padding: 20px 22px 18px;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 360px 1fr;
   gap: 18px;
   align-items: start;
 }
@@ -171,6 +136,10 @@ body::before {
   margin-bottom: 10px;
 }
 
+.section-head-inline {
+  align-items: flex-start;
+}
+
 .section-title {
   font-size: 18px;
   font-weight: 800;
@@ -182,10 +151,42 @@ body::before {
 .info-subtitle,
 .composer-tip,
 .status-hint,
-.notes {
+.bottom-note {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.6;
+}
+
+.toolbar-icons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.icon-btn {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  margin: 0;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--panel-strong);
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 16px;
+  box-shadow: none;
+}
+
+.text-icon-btn {
+  width: auto;
+  min-width: 0;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .field-group {
@@ -243,9 +244,7 @@ button:hover {
   filter: brightness(1.03);
 }
 
-button.secondary,
-button.ghost-btn,
-button.theme-btn {
+button.secondary {
   background: var(--panel-strong);
   color: var(--text);
   box-shadow: none;
@@ -284,14 +283,10 @@ button.theme-btn {
   font-weight: 800;
   color: var(--muted);
 }
+
 .status-bar.ok { color: var(--ok); }
 .status-bar.warn { color: var(--warn); }
 .status-bar.bad { color: var(--bad); }
-
-.notes-card .notes {
-  margin: 0;
-  padding-left: 18px;
-}
 
 .chat-card {
   min-height: 760px;
@@ -397,8 +392,8 @@ button.theme-btn {
   flex: 0 0 auto;
 }
 
-.wide-info {
-  margin-top: 18px;
+.full-width-info {
+  width: 100%;
 }
 
 .result-head {
@@ -408,7 +403,7 @@ button.theme-btn {
 .info-card pre {
   white-space: pre-wrap;
   word-break: break-word;
-  min-height: 260px;
+  min-height: 220px;
   margin: 0;
   color: var(--text);
   background: var(--info-bg);
@@ -418,14 +413,12 @@ button.theme-btn {
   overflow: auto;
 }
 
-@media (max-width: 1180px) {
-  .hero-grid {
-    grid-template-columns: 1fr 1fr;
-  }
+.bottom-note {
+  padding: 0 4px 4px;
 }
 
 @media (max-width: 1024px) {
-  .layout {
+  .content-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -436,17 +429,22 @@ button.theme-btn {
   }
 
   .topbar {
-    flex-direction: column;
-    align-items: stretch;
+    padding: 16px 18px;
   }
 
-  .topbar-actions,
-  .actions,
-  .composer-actions,
   .row2,
-  .hero-grid {
+  .actions {
     grid-template-columns: 1fr;
     display: grid;
+  }
+
+  .section-head-inline {
+    flex-direction: column;
+  }
+
+  .toolbar-icons {
+    width: 100%;
+    justify-content: flex-end;
   }
 
   .chat-card {
@@ -459,6 +457,11 @@ button.theme-btn {
 
   .bubble {
     max-width: 92%;
+  }
+
+  .composer-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .composer-actions button {
