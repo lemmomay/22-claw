@@ -75,26 +75,67 @@ function buildChatBody({ provider, model, message, path }) {
 
 function extractModels(payload) {
   const data = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload?.models) ? payload.models : [];
-  return data.map((item) => {
-    if (typeof item === 'string') return item;
-    if (item && typeof item.id === 'string') return item.id;
-    if (item && typeof item.name === 'string') return item.name;
-    return null;
-  }).filter(Boolean);
+  return data
+    .map((item) => {
+      if (typeof item === 'string') return item;
+      if (item && typeof item.id === 'string') return item.id;
+      if (item && typeof item.name === 'string') return item.name;
+      return null;
+    })
+    .filter(Boolean);
 }
 
 function extractChatText(provider, payload) {
+  if (!payload || typeof payload !== 'object') return '';
+
+  if (typeof payload.rawText === 'string' && payload.rawText.trim()) {
+    return '';
+  }
+
   if (provider === 'anthropic') {
     const content = Array.isArray(payload?.content) ? payload.content : [];
     const textBlock = content.find((item) => item && item.type === 'text' && typeof item.text === 'string');
-    return textBlock?.text || JSON.stringify(payload);
+    return textBlock?.text || '';
   }
-  if (typeof payload?.output_text === 'string' && payload.output_text) return payload.output_text;
+
+  if (typeof payload?.output_text === 'string' && payload.output_text.trim()) return payload.output_text;
+
   const msg = payload?.choices?.[0]?.message?.content;
-  if (typeof msg === 'string') return msg;
-  const outputText = payload?.output?.flatMap?.((item) => item?.content || [])?.find?.((x) => x?.type === 'output_text' && typeof x?.text === 'string');
-  if (outputText?.text) return outputText.text;
-  return JSON.stringify(payload);
+  if (typeof msg === 'string' && msg.trim()) return msg;
+  if (Array.isArray(msg)) {
+    const joined = msg
+      .map((item) => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item.text === 'string') return item.text;
+        return '';
+      })
+      .filter(Boolean)
+      .join('\n');
+    if (joined.trim()) return joined;
+  }
+
+  const outputText = payload?.output
+    ?.flatMap?.((item) => item?.content || [])
+    ?.find?.((x) => x?.type === 'output_text' && typeof x?.text === 'string');
+  if (outputText?.text?.trim()) return outputText.text;
+
+  return '';
+}
+
+function hasUsableResponse(provider, payload) {
+  return Boolean(extractChatText(provider, payload));
+}
+
+function summarizePreview(preview) {
+  if (!preview || typeof preview !== 'object') return preview;
+  if (typeof preview.rawText === 'string') {
+    const raw = preview.rawText.trim();
+    return {
+      rawTextPreview: raw.slice(0, 300),
+      looksLikeHtml: /^<!doctype html>|^<html[\s>]/i.test(raw),
+    };
+  }
+  return preview;
 }
 
 function applyTheme(theme) {
@@ -226,7 +267,7 @@ async function tryConnectivity(baseUrl, provider, apiKey, manualPath) {
         method: 'GET',
         headers: buildHeaders({ provider, apiKey }),
       });
-      attempts.push({ path, status: result.status, ok: result.ok, url, preview: result.json });
+      attempts.push({ path, status: result.status, ok: result.ok, url, preview: summarizePreview(result.json) });
       if (result.ok) return { ok: true, attempts };
     } catch (error) {
       attempts.push({ path, ok: false, url, error: String(error.message || error) });
@@ -247,7 +288,7 @@ async function tryModels(baseUrl, provider, apiKey, manualPath) {
         headers: buildHeaders({ provider, apiKey }),
       });
       const models = extractModels(result.json);
-      attempts.push({ path, status: result.status, ok: result.ok, url, count: models.length, preview: result.json });
+      attempts.push({ path, status: result.status, ok: result.ok, url, count: models.length, preview: summarizePreview(result.json) });
       if (result.ok && models.length) return { ok: true, attempts, models, path };
     } catch (error) {
       attempts.push({ path, ok: false, url, error: String(error.message || error) });
@@ -334,10 +375,11 @@ async function chat(messageOverride = null) {
         body: JSON.stringify(buildChatBody({ provider, model, message, path })),
       });
       const durationMs = Date.now() - started;
-      attempts.push({ path, status: result.status, ok: result.ok, url, durationMs, preview: result.json });
-      if (result.ok) {
+      const preview = summarizePreview(result.json);
+      attempts.push({ path, status: result.status, ok: result.ok, url, durationMs, preview });
+      if (result.ok && hasUsableResponse(provider, result.json)) {
         const responseText = extractChatText(provider, result.json);
-        addBubble('assistant', responseText || '[empty response]', `${provider} · ${path}`);
+        addBubble('assistant', responseText, `${provider} · ${path}`);
         $('message').value = '';
         setStatus(`成功 · ${durationMs}ms`, 'ok', `通过 ${path} 收到响应。`);
         show({ ok: true, provider, path, durationMs, response: responseText, attempts, raw: result.json });
@@ -348,17 +390,21 @@ async function chat(messageOverride = null) {
     }
   }
 
-  addBubble('assistant', '聊天请求失败，请看下方 INFO。', 'error', true);
-  setStatus('聊天测试失败', 'bad', '可能是 CORS、鉴权、路径错误或接口格式不兼容。');
-  show({ ok: false, provider, model, attempts });
+  addBubble('assistant', '没有拿到可用的聊天文本，请看下方 INFO。这个接口可能返回了网页、要求不同参数，或者正确路径并不是当前命中的这些。', 'error', true);
+  setStatus('聊天测试失败', 'bad', '接口虽然可能返回 200，但内容不是可用的模型回复。请看 INFO 里的 attempts。');
+  show({ ok: false, provider, model, reason: 'no-usable-chat-text', attempts });
 }
 
 async function quickChat() {
   const defaultMessage = '你好，介绍一下你自己。';
-  if (!$('message').value.trim()) {
-    $('message').value = defaultMessage;
-  }
+  $('message').value = defaultMessage;
   await chat(defaultMessage);
+}
+
+function clearChatOnly() {
+  $('chatTimeline').innerHTML = '';
+  ensureEmptyState();
+  setStatus('已清空聊天区', 'warn', '连接设置、模型和 INFO 保持不变，方便继续切模型测试。');
 }
 
 function clearAll() {
@@ -401,6 +447,7 @@ window.addEventListener('DOMContentLoaded', () => {
   $('probeBtn').addEventListener('click', probe);
   $('quickChatBtn').addEventListener('click', quickChat);
   $('chatBtnBottom').addEventListener('click', () => chat());
+  $('clearChatBtn').addEventListener('click', clearChatOnly);
   $('clearBtn').addEventListener('click', clearAll);
   $('fillDemoBtn').addEventListener('click', fillDemo);
   $('themeToggle').addEventListener('click', toggleTheme);
@@ -408,4 +455,3 @@ window.addEventListener('DOMContentLoaded', () => {
   ensureEmptyState();
   bindComposerBehavior();
 });
-

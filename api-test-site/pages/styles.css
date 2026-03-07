@@ -159,11 +159,16 @@ body::before {
   line-height: 1.6;
 }
 
-.toolbar-icons {
+.toolbar-icons,
+.chat-tools {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.chat-head-with-tools {
+  align-items: flex-start;
 }
 
 .icon-btn {
@@ -296,8 +301,18 @@ button.secondary {
   grid-template-rows: auto 1fr auto;
 }
 
-.chat-head {
-  margin-bottom: 14px;
+.chat-head-with-tools {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.chat-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .chat-timeline {
@@ -447,11 +462,13 @@ button.secondary {
     display: grid;
   }
 
-  .section-head-inline {
+  .section-head-inline,
+  .chat-head-with-tools {
     flex-direction: column;
   }
 
-  .toolbar-icons {
+  .toolbar-icons,
+  .chat-tools {
     width: 100%;
     justify-content: flex-end;
   }
